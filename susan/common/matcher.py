@@ -6,7 +6,7 @@ def is_src_port(pkt, port):
 
 
 def is_dst_port(pkt, port):
-    return (pkt.src_port == port)
+    return (pkt.dst_port == port)
 
 
 def has_port(pkt, src_port=None, dst_port=None):
