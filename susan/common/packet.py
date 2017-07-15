@@ -1,3 +1,5 @@
+"""Contains common methods to create packets"""
+
 from ryu.lib.packet import ether_types as ether
 from ryu.lib.packet import ethernet, packet
 from ryu.lib.packet import ipv4
@@ -5,10 +7,13 @@ from ryu.lib.packet import tcp
 from ryu.lib.packet import udp
 
 
-def send_packet(datapath, port, pkt):
+def send_packet(datapath, pkt, port=None):
+    """Send a packet to specified port and datapath"""
     ofproto = datapath.ofproto
     parser = datapath.ofproto_parser
-    actions = [parser.OFPActionOutput(port=ofproto.OFPP_FLOOD)]
+    if port is None:
+        port = ofproto.OFPP_FLOOD
+    actions = [parser.OFPActionOutput(port=port)]
     out = parser.OFPPacketOut(datapath=datapath,
                               buffer_id=ofproto.OFP_NO_BUFFER,
                               in_port=ofproto.OFPP_CONTROLLER,
@@ -21,7 +26,7 @@ def send_packet(datapath, port, pkt):
 def get_ether_pkt(src, dst, ethertype=ether.ETH_TYPE_IP):
     """Creates a Ether packet"""
     return ethernet.ethernet(src=src, dst=dst, ethertype=ethertype)
-    
+
 
 def get_ip_pkt(src, dst, version=4, proto=0):
     """Creates a IP Packet"""
@@ -48,12 +53,13 @@ def get_pkt(protocols):
     return pkt
 
 
-def add_flow(datapath, priority, match, actions):
+def add_flow(datapath, priority, match, actions, table_id=0):
+    """Add flows to specified table."""
     ofproto = datapath.ofproto
     parser = datapath.ofproto_parser
     inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                          actions)]
 
     mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                            match=match, instructions=inst)
+                            match=match, instructions=inst, table_id=table_id)
     datapath.send_msg(mod)
