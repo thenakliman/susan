@@ -1,3 +1,16 @@
+# Copyright 2017 <thenakliman@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 """Contains common methods to create packets"""
 
 from ryu.lib.packet import ether_types as ether
@@ -6,6 +19,8 @@ from ryu.lib.packet import ipv4
 from ryu.lib.packet import tcp
 from ryu.lib.packet import udp
 
+from susan.common import constants
+
 
 def send_packet(datapath, pkt, port=None):
     """Send a packet to specified port and datapath"""
@@ -13,6 +28,7 @@ def send_packet(datapath, pkt, port=None):
     parser = datapath.ofproto_parser
     if port is None:
         port = ofproto.OFPP_FLOOD
+
     actions = [parser.OFPActionOutput(port=port)]
     out = parser.OFPPacketOut(datapath=datapath,
                               buffer_id=ofproto.OFP_NO_BUFFER,
@@ -53,13 +69,27 @@ def get_pkt(protocols):
     return pkt
 
 
-def add_flow(datapath, priority, match, actions, table_id=0):
+def add_flow(datapath, match, actions=None, priority=0,
+             table_id=constants.TABLE.DEFAULT, instructions=None):
     """Add flows to specified table."""
+
     ofproto = datapath.ofproto
     parser = datapath.ofproto_parser
-    inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-                                         actions)]
+    instructions = instructions or []
+    if actions:
+        instructions.append(
+            parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions))
 
-    mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                            match=match, instructions=inst, table_id=table_id)
-    datapath.send_msg(mod)
+    flow = parser.OFPFlowMod(datapath=datapath, priority=priority,
+                             match=match, instructions=instructions,
+                             table_id=table_id, command=ofproto.OFPFC_ADD)
+    datapath.send_msg(flow)
+
+
+def send_to_controller(parser, ofproto, datapath, table_id, priority=0):
+    match = parser.OFPMatch()
+    actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                      ofproto.OFPCML_NO_BUFFER)]
+
+    add_flow(datapath=datapath, priority=priority,
+             match=match, actions=actions, table_id=table_id)

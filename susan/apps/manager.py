@@ -1,3 +1,16 @@
+# Copyright 2017 <thenakliman@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 """Handles all the apps being used, their registration etc."""
 from ryu.base import app_manager
 from ryu.controller import ofp_event
@@ -7,6 +20,7 @@ from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3
 
 from susan.apps.dhcp import dhcp
+from susan.common import constants
 from susan.common import packet as packet_util
 
 
@@ -15,7 +29,7 @@ class AppManager(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
     def __init__(self, *args, **kwargs):
         super(AppManager, self).__init__(*args, **kwargs)
-        self.apps = [(dhcp.DHCPServer.matcher, dhcp.DHCPServer().process_packet)]
+        self.apps = []
 
     # pylint: disable=no-member,no-self-use,locally-disabled
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
@@ -26,14 +40,18 @@ class AppManager(app_manager.RyuApp):
         datapath = event.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        packet_util.send_to_controller(parser=parser,
+                                       ofproto=ofproto,
+                                       datapath=datapath,
+                                       priority=0,
+                                       table_id=constants.TABLE.DEFAULT)
 
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        packet_util.add_flow(datapath, 0, match, actions)
         req = parser.OFPSetConfig(datapath, ofproto_v1_3.OFPC_FRAG_REASM,
                                   ofproto.OFPCML_NO_BUFFER)
+
         datapath.send_msg(req)
+        self.apps.append((dhcp.DHCPServer.matcher,
+                          dhcp.DHCPServer(datapath).process_packet))
 
 
     def register(self, match, callback):

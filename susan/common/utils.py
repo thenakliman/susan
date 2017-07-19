@@ -12,29 +12,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from susan.common import utils
-
-# =============================================
-# Common Constants
-# =============================================
-ZERO_IPADDR = '0.0.0.0'
-BROADCAST_IP = '255.255.255.255'
-BROADCAST_MAC = 'ff:ff:ff:ff:ff:ff'
-
-# =============================================
-
-TABLE = utils.make_enum(
-    DEFAULT=0,
-    DHCP=10
-)
+import netaddr
 
 
-PROTOCOL = utils.make_enum(
-    UDP=17,
-    TCP=6
-)
+def get_packed_address(address):
+    """Returns packet ip address."""
+
+    return netaddr.IPAddress(address).packed
 
 
-ETHERTYPE = utils.make_enum(
-    IPV4=0x0800
-)
+def make_type(name, base, **attributes):
+    return type(name, base, attributes)
+
+
+def make_enum(**attributes):
+    return make_type('Enum', (), **attributes)
