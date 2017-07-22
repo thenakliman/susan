@@ -38,7 +38,6 @@ def send_packet(datapath, pkt, port=None):
     datapath.send_msg(out)
 
 
-
 def get_ether_pkt(src, dst, ethertype=ether.ETH_TYPE_IP):
     """Creates a Ether packet"""
     return ethernet.ethernet(src=src, dst=dst, ethertype=ethertype)
