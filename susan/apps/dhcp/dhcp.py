@@ -109,12 +109,12 @@ class DHCPServer(object):
         opts = dhcp_pkt.options.option_list
         msg_type = dhcp_const.OPTIONS.MESSAGE_TYPE
         discover = struct.pack('!B', dhcp_const.REQUEST.DISCOVER)
-        offer = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
+        request = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
         for option in opts:
             if option.tag == msg_type and option.value == discover:
                 request_type = REQUEST_MAPPER.DHCPDISCOVER
                 break
-            elif option.tag == msg_type and option.value == offer:
+            elif option.tag == msg_type and option.value == request:
                 request_type = REQUEST_MAPPER.DHCPREQUEST
                 break
 

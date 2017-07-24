@@ -29,28 +29,25 @@ def struct_pack(value, **kwargs):
     return struct.pack(frmt, value)
 
 
-def pack_list_address(values, **kwargs):
-    packed_ips = []
-    for value in values:
-        packed_ips.append(pack_ip(value))
+def pack_ip(values, **kwargs):
+    if not isinstance(values, list):
+        return utils.get_packed_address(values)
+    else:
+        packed_ips = []
+        for value in values:
+            packed_ips.append(utils.get_packed_address(value))
 
-    return packed_ips
-
-
-def pack_ip(value, **kwargs):
-    return utils.get_packed_address(value)
-
-pack_list_address = pack_ip
+        return packed_ips
 
 
 pack_data = {
     # Vendor Extensions
     const.OPTIONS.NETMASK: {'method': pack_ip},
-    const.OPTIONS.ROUTER: {'method': pack_list_address},
-    const.OPTIONS.TIME_SERVER: {'method': pack_list_address},
-    const.OPTIONS.NAME_SERVER: {'method': pack_list_address},
-    const.OPTIONS.DNS_SERVER: {'method': pack_list_address},
-    const.OPTIONS.LOG_SERVER: {'method': pack_list_address},
+    const.OPTIONS.ROUTER: {'method': pack_ip},
+    const.OPTIONS.TIME_SERVER: {'method': pack_ip},
+    const.OPTIONS.NAME_SERVER: {'method': pack_ip},
+    const.OPTIONS.DNS_SERVER: {'method': pack_ip},
+    const.OPTIONS.LOG_SERVER: {'method': pack_ip},
     const.OPTIONS.HOST_NAME: {},
     const.OPTIONS.BOOT_FILE: {'format': '!i'},
     const.OPTIONS.DOMAIN_NAME: {},
