@@ -109,12 +109,12 @@ class DHCPServer(object):
         opts = dhcp_pkt.options.option_list
         msg_type = dhcp_const.OPTIONS.MESSAGE_TYPE
         discover = struct.pack('!B', dhcp_const.REQUEST.DISCOVER)
-        offer = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
+        request = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
         for option in opts:
             if option.tag == msg_type and option.value == discover:
                 request_type = REQUEST_MAPPER.DHCPDISCOVER
                 break
-            elif option.tag == msg_type and option.value == offer:
+            elif option.tag == msg_type and option.value == request:
                 request_type = REQUEST_MAPPER.DHCPREQUEST
                 break
 
@@ -135,14 +135,18 @@ class DHCPServer(object):
         if pkt.get_protocol(dhcp.dhcp).ciaddr == const.ZERO_IPADDR:
             return const.BROADCAST_IP
         else:
-            return pkt.ciaddr
+            return const.BROADCAST_IP
+            # fixme(thenakliman): Fix this unicast
+            # return pkt.ciaddr
 
     @staticmethod
     def _get_dst_mac(pkt):
         if pkt.get_protocol(dhcp.dhcp).ciaddr == const.ZERO_IPADDR:
             return const.BROADCAST_MAC
         else:
-            return pkt.get_packet(ethernet.ethernet).src_mac
+            return const.BROADCAST_MAC
+            # fixme(thenakliman): Fix this unicast
+            # return pkt.get_packet(ethernet.ethernet).src_mac
 
     @classmethod
     def fetch_option_for_offer(cls, pkt):
@@ -189,23 +193,23 @@ class DHCPServer(object):
         """Sends DHCP offer request"""
         ether_pkt = pkt.get_protocol(ethernet.ethernet)
         options = cls.fetch_option_for_offer(pkt)
+        dhcp_packet = packet_util.make_l4_packet(
+            src_mac=SERVER_MAC, dst_mac=const.BROADCAST_MAC,
+            src_ip=SERVER_IP, dst_ip=const.BROADCAST_IP,
+            src_port=dhcp_const.PORTS.SERVER_PORT,
+            dst_port=dhcp_const.PORTS.CLIENT_PORT,
+            proto=const.PROTOCOL.UDP)
+
         dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=ether_pkt.src,
                              xid=pkt.get_protocol(dhcp.dhcp).xid,
                              yiaddr=YIP,
                              siaddr=SERVER_IP,
                              options=options)
 
-        protocol_stacked = (
-            packet_util.get_ether_pkt(src=SERVER_MAC,
-                                      dst=const.BROADCAST_MAC),
-            packet_util.get_ip_pkt(src=SERVER_IP,
-                                   dst=const.BROADCAST_IP, proto=17),
-            packet_util.get_udp_pkt(src_port=dhcp_const.PORTS.SERVER_PORT,
-                                    dst_port=dhcp_const.PORTS.CLIENT_PORT),
-            dhcp_pkt)
+        dhcp_packet.add_protocol(dhcp_pkt)
 
         packet_util.send_packet(datapath,
-                                packet_util.get_pkt(protocol_stacked),
+                                dhcp_packet,
                                 in_port)
 
     def handle_request(self, pkt, datapath, in_port):
@@ -217,20 +221,23 @@ class DHCPServer(object):
         """Make and send DHCPACK packet"""
         src_ether_pkt = pkt.get_protocol(ethernet.ethernet)
         options = cls.fetch_option_for_ack(pkt)
+        dst_ip = cls._get_dst_ip(pkt)
+        dst_mac = cls._get_dst_mac(pkt)
+
+        dhcp_packet = packet_util.make_l4_packet(
+            src_mac=SERVER_MAC, dst_mac=dst_mac,
+            src_ip=SERVER_IP, dst_ip=dst_ip,
+            src_port=dhcp_const.PORTS.SERVER_PORT,
+            dst_port=dhcp_const.PORTS.CLIENT_PORT,
+            proto=const.PROTOCOL.UDP)
+
         dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=src_ether_pkt.src,
                              yiaddr=YIP,
                              xid=pkt.get_protocol(dhcp.dhcp).xid,
                              siaddr=SERVER_IP,
                              options=options)
-        dst_ip = cls._get_dst_ip(pkt)
-        dst_mac = cls._get_dst_mac(pkt)
-        protocol_stacked = (
-            packet_util.get_ether_pkt(src=SERVER_MAC, dst=dst_mac),
-            packet_util.get_ip_pkt(src=SERVER_IP, dst=dst_ip, proto=17),
-            packet_util.get_udp_pkt(src_port=dhcp_const.PORTS.SERVER_PORT,
-                                    dst_port=dhcp_const.PORTS.CLIENT_PORT),
-            dhcp_pkt)
 
+        dhcp_packet.add_protocol(dhcp_pkt)
         packet_util.send_packet(datapath,
-                                packet_util.get_pkt(protocol_stacked),
+                                dhcp_packet,
                                 port)
