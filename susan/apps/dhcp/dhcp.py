@@ -120,6 +120,8 @@ class DHCPServer(object):
                 elif option_value == dhcp_const.REQUEST.DECLINE:
                     request_type = REQUEST_MAPPER.DHCPDECLINE
                     break
+                elif option_value == dhcp_const.REQUEST.RELEASE:
+                    request_type = REQUEST_MAPPER.DHCPRELEASE
 
         return request_type
 
@@ -258,8 +260,17 @@ class DHCPServer(object):
             datapath=datapath,
             out_port=in_port)
 
-    def handle_decline(cls, pkt, datapath, in_port):
+    @staticmethod
+    def handle_decline(pkt, datapath, in_port):
         """Handles DHCPDECLINE packet"""
         # pkt.get_protocol(dhcp.dhcp).yiaddr is already in use
-        # Move this ip address to available ip pool
+        # Move this ip address to available ip pool from commited
+        pass
+
+    @staticmethod
+    def handle_release(pkt, datapath, in_port):
+        # pkt.get_protocol(dhcp.dhcp).yiaddr is already in use
+        # Move this ip address to available ip pool from allocated
+        print(pkt)
+        print(pkt.get_protocol(dhcp.dhcp).yiaddr)
         pass
