@@ -188,56 +188,69 @@ class DHCPServer(object):
 
         return option_list
 
+    @staticmethod
+    def _make_dhcp_packet(op, chaddr, xid, yiaddr, siaddr, options=None):
+        return dhcp.dhcp(op=op, chaddr=chaddr,
+                         xid=xid, yiaddr=yiaddr,
+                         siaddr=siaddr,
+                         options=options)
+
+    @classmethod
+    def _send_dhcp_pkt(cls, pkt, src_mac, dst_mac, src_ip, dst_ip,
+                       src_port, dst_port, proto, options, datapath, out_port):
+
+        ether_pkt = pkt.get_protocol(ethernet.ethernet)
+        dhcp_packet = packet_util.make_l4_packet(
+            src_mac=src_mac, dst_mac=dst_mac,
+            src_ip=src_ip, dst_ip=dst_ip,
+            src_port=src_port, dst_port=dst_port,
+            proto=proto)
+
+        dhcp_pkt = cls._make_dhcp_packet(
+            op=dhcp.DHCP_BOOT_REPLY, chaddr=ether_pkt.src,
+            xid=pkt.get_protocol(dhcp.dhcp).xid,
+            yiaddr=YIP, siaddr=SERVER_IP,
+            options=options)
+
+        dhcp_packet.add_protocol(dhcp_pkt)
+        packet_util.send_packet(datapath,
+                                dhcp_packet,
+                                out_port)
+
     @classmethod
     def send_offer(cls, pkt, datapath, in_port):
         """Sends DHCP offer request"""
-        ether_pkt = pkt.get_protocol(ethernet.ethernet)
         options = cls.fetch_option_for_offer(pkt)
-        dhcp_packet = packet_util.make_l4_packet(
-            src_mac=SERVER_MAC, dst_mac=const.BROADCAST_MAC,
+        cls._send_dhcp_pkt(
+            pkt=pkt,
+            src_mac=SERVER_MAC,
+            dst_mac=const.BROADCAST_MAC,
             src_ip=SERVER_IP, dst_ip=const.BROADCAST_IP,
             src_port=dhcp_const.PORTS.SERVER_PORT,
             dst_port=dhcp_const.PORTS.CLIENT_PORT,
-            proto=const.PROTOCOL.UDP)
-
-        dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=ether_pkt.src,
-                             xid=pkt.get_protocol(dhcp.dhcp).xid,
-                             yiaddr=YIP,
-                             siaddr=SERVER_IP,
-                             options=options)
-
-        dhcp_packet.add_protocol(dhcp_pkt)
-
-        packet_util.send_packet(datapath,
-                                dhcp_packet,
-                                in_port)
+            proto=const.PROTOCOL.UDP,
+            options=options,
+            datapath=datapath,
+            out_port=in_port)
 
     def handle_request(self, pkt, datapath, in_port):
         """Handles DHCPREQUEST packet"""
         self.send_ack(pkt, datapath, in_port)
 
     @classmethod
-    def send_ack(cls, pkt, datapath, port):
+    def send_ack(cls, pkt, datapath, in_port):
         """Make and send DHCPACK packet"""
-        src_ether_pkt = pkt.get_protocol(ethernet.ethernet)
         options = cls.fetch_option_for_ack(pkt)
         dst_ip = cls._get_dst_ip(pkt)
         dst_mac = cls._get_dst_mac(pkt)
-
-        dhcp_packet = packet_util.make_l4_packet(
-            src_mac=SERVER_MAC, dst_mac=dst_mac,
+        cls._send_dhcp_pkt(
+            pkt=pkt,
+            src_mac=SERVER_MAC,
+            dst_mac=dst_mac,
             src_ip=SERVER_IP, dst_ip=dst_ip,
             src_port=dhcp_const.PORTS.SERVER_PORT,
             dst_port=dhcp_const.PORTS.CLIENT_PORT,
-            proto=const.PROTOCOL.UDP)
-
-        dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=src_ether_pkt.src,
-                             yiaddr=YIP,
-                             xid=pkt.get_protocol(dhcp.dhcp).xid,
-                             siaddr=SERVER_IP,
-                             options=options)
-
-        dhcp_packet.add_protocol(dhcp_pkt)
-        packet_util.send_packet(datapath,
-                                dhcp_packet,
-                                port)
+            proto=const.PROTOCOL.UDP,
+            options=options,
+            datapath=datapath,
+            out_port=in_port)
