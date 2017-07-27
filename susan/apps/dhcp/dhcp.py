@@ -108,15 +108,18 @@ class DHCPServer(object):
         request_type = ''
         opts = dhcp_pkt.options.option_list
         msg_type = dhcp_const.OPTIONS.MESSAGE_TYPE
-        discover = struct.pack('!B', dhcp_const.REQUEST.DISCOVER)
-        request = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
         for option in opts:
-            if option.tag == msg_type and option.value == discover:
-                request_type = REQUEST_MAPPER.DHCPDISCOVER
-                break
-            elif option.tag == msg_type and option.value == request:
-                request_type = REQUEST_MAPPER.DHCPREQUEST
-                break
+            if option.tag == msg_type:
+                option_value = struct.unpack('!B', option.value)[0]
+                if option_value == dhcp_const.REQUEST.DISCOVER:
+                    request_type = REQUEST_MAPPER.DHCPDISCOVER
+                    break
+                elif option_value == dhcp_const.REQUEST.REQUEST:
+                    request_type = REQUEST_MAPPER.DHCPREQUEST
+                    break
+                elif option_value == dhcp_const.REQUEST.DECLINE:
+                    request_type = REQUEST_MAPPER.DHCPDECLINE
+                    break
 
         return request_type
 
@@ -254,3 +257,9 @@ class DHCPServer(object):
             options=options,
             datapath=datapath,
             out_port=in_port)
+
+    def handle_decline(cls, pkt, datapath, in_port):
+        """Handles DHCPDECLINE packet"""
+        # pkt.get_protocol(dhcp.dhcp).yiaddr is already in use
+        # Move this ip address to available ip pool
+        pass
