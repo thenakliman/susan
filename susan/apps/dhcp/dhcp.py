@@ -44,16 +44,16 @@ def get_value(param):
     return mapper.get(param, None)
 
 
-REQUEST_MAPPER = utils.make_enum(
-    DHCPDISCOVER='discover',
-    DHCPOFFER='offer',
-    DHCPREQUEST='request',
-    DHCPACK='ack',
-    DHCPNACK='nack',
-    DHCPDECLINE='decline',
-    DHCPRELEASE='release',
-    DHCPINFORM='inform',
-)
+REQUEST_MAPPER = {
+    dhcp_const.REQUEST.DISCOVER: 'discover',
+    dhcp_const.REQUEST.OFFER: 'offer',
+    dhcp_const.REQUEST.REQUEST: 'request',
+    dhcp_const.REQUEST.ACK: 'ack',
+    dhcp_const.REQUEST.NACK: 'nack',
+    dhcp_const.REQUEST.DECLINE: 'decline',
+    dhcp_const.REQUEST.RELEASE: 'release',
+    dhcp_const.REQUEST.INFORM: 'inform',
+}
 
 
 class DHCPServer(object):
@@ -111,17 +111,8 @@ class DHCPServer(object):
         for option in opts:
             if option.tag == msg_type:
                 option_value = struct.unpack('!B', option.value)[0]
-                if option_value == dhcp_const.REQUEST.DISCOVER:
-                    request_type = REQUEST_MAPPER.DHCPDISCOVER
-                    break
-                elif option_value == dhcp_const.REQUEST.REQUEST:
-                    request_type = REQUEST_MAPPER.DHCPREQUEST
-                    break
-                elif option_value == dhcp_const.REQUEST.DECLINE:
-                    request_type = REQUEST_MAPPER.DHCPDECLINE
-                    break
-                elif option_value == dhcp_const.REQUEST.RELEASE:
-                    request_type = REQUEST_MAPPER.DHCPRELEASE
+                request_type = REQUEST_MAPPER.get(option_value)
+                break
 
         return request_type
 
