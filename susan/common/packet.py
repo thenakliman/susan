@@ -43,6 +43,12 @@ def get_ether_pkt(src, dst, ethertype=ether.ETH_TYPE_IP):
     return ethernet.ethernet(src=src, dst=dst, ethertype=ethertype)
 
 
+def make_l2_packet(src, dst, ethertype=ether.ETH_TYPE_IP):
+    pkt = packet.Packet()
+    pkt.add_protocol(get_ether_pkt(src, dst, ethertype))
+    return pkt
+
+
 def get_ip_pkt(src, dst, version=4, proto=0):
     """Creates a IP Packet"""
     return ipv4.ipv4(src=src, dst=dst, version=version, proto=proto)
@@ -53,9 +59,30 @@ def get_tcp_pkt(src_port, dst_port):
     return tcp.tcp(src_port=src_port, dst_port=dst_port)
 
 
+def make_l3_packet(src_mac, dst_mac, src_ip, dst_ip, proto, version=4):
+    pkt = make_l2_packet(src=src_mac, dst=dst_mac)
+    l3_header = get_ip_pkt(src=src_ip, dst=dst_ip, version=4, proto=proto)
+    pkt.add_protocol(l3_header)
+    return pkt
+
+
 def get_udp_pkt(src_port, dst_port):
     """Creates a UDP Packet"""
     return udp.udp(src_port=src_port, dst_port=dst_port)
+
+
+def make_l4_packet(src_mac, dst_mac, src_ip, dst_ip, proto,
+                   src_port, dst_port, ip_version=4):
+    """Creates a TCP Packet"""
+
+    pkt = make_l3_packet(src_mac, dst_mac, src_ip, dst_ip, proto, ip_version)
+
+    if proto == constants.PROTOCOL.TCP:
+        pkt.add_protocol(get_tcp_pkt(src_port, dst_port))
+    else:
+        pkt.add_protocol(get_udp_pkt(src_port, dst_port))
+
+    return pkt
 
 
 def get_pkt(protocols):
