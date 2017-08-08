@@ -25,7 +25,8 @@ BROADCAST_MAC = 'ff:ff:ff:ff:ff:ff'
 
 TABLE = utils.make_enum(
     DEFAULT=0,
-    DHCP=10
+    DHCP=10,
+    DNAT=0
 )
 
 

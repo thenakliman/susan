@@ -45,7 +45,7 @@ class DNAT(object):
 
     @classmethod
     def dnat(cls, datapath, pub_mac, pub_ipaddr, private_mac, private_ipaddr,
-             port=None, table_id=0, priority=0):
+             port=None, table_id=constants.TABLE.DNAT, priority=0):
 
         parser = datapath.ofproto_parser
         arp.ARPHandler.add_arp_responder(datapath, pub_mac, pub_ipaddr)
