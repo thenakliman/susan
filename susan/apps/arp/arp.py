@@ -57,11 +57,10 @@ class ARPHandler(object):
             parser.OFPActionOutput(port)]
 
 
-
     @classmethod
-    def add_arp_reponder(cls, datapath, dnat_mac,
-                         ip_addr, port=None,
-                         priority=0, table=0):
+    def add_arp_responder(cls, datapath, dnat_mac,
+                          ip_addr, port=None,
+                          priority=0, table=0):
         """Add arp reponder flow for an entry"""
 
         ofproto = datapath.ofproto
@@ -77,11 +76,9 @@ class ARPHandler(object):
         ]
 
         # todo(thenakliman): Make generic flow methods(add, delete etc)
-        print(match, instructions)
         req = ofp_parser.OFPFlowMod(datapath, cookie=0,
                                     command=ofproto.OFPFC_ADD,
                                     idle_timeout=0, hard_timeout=0,
                                     priority=priority, buffer_id=4294967295,
                                     match=match, instructions=instructions)
-        print(req)
         datapath.send_msg(req)
