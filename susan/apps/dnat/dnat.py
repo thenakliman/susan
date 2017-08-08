@@ -11,11 +11,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 
+from ryu.ofproto import ofproto_v1_3, nicira_ext
 from susan.apps.arp import arp
 from susan.common import constants
 from susan.common import utils
-
-from ryu.ofproto import ofproto_v1_3, nicira_ext
+from susan.common import packet as packet_util
 
 
 class DNAT(object):
@@ -31,7 +31,7 @@ class DNAT(object):
     @staticmethod
     def _get_actions(datapath, dst_mac, ip_addr, port=None):
         parser = datapath.ofproto_parser
-        dst_ipv4 = utils.get_packed_address(ip_addr)
+        # dst_ipv4 = utils.get_packed_address(ip_addr)
 
         if port is None:
             port = datapath.ofproto.OFPP_FLOOD
@@ -45,23 +45,18 @@ class DNAT(object):
 
     @classmethod
     def dnat(cls, datapath, pub_mac, pub_ipaddr, private_mac, private_ipaddr,
-             port=None, table=0, priority=0):
+             port=None, table_id=0, priority=0):
+
         parser = datapath.ofproto_parser
         arp.ARPHandler.add_arp_responder(datapath, pub_mac, pub_ipaddr)
-        match = cls._get_match(parser, pub_mac, pub_ipaddr)
-        actions = cls._get_actions(datapath, private_mac, private_ipaddr, port)
+        match = cls._get_match(parser, dst_mac=pub_mac, nat_ip=pub_ipaddr)
+        actions = cls._get_actions(datapath, dst_mac=private_mac,
+                                   ip_addr=private_ipaddr, port=port)
 
         instructions = [
             parser.OFPInstructionActions(datapath.ofproto.OFPIT_APPLY_ACTIONS,
                                          actions)
         ]
- 
-        req = datapath.ofproto_parser.OFPFlowMod(
-            datapath, cookie=0,
-            command=datapath.ofproto.OFPFC_ADD,
-            idle_timeout=0, hard_timeout=0,
-            priority=100, buffer_id=4294967295,
-            match=match, instructions=instructions
-        )
 
-        datapath.send_msg(req)
+        packet_util.add_flow(datapath, match=match, instructions=instructions,
+                             priority=priority, table_id=table_id)

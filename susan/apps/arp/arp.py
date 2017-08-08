@@ -11,17 +11,18 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 
-from susan.common import constants
-from susan.common import utils
-
 from ryu.lib.packet import arp
 from ryu.ofproto import ofproto_v1_3, nicira_ext
+
+from susan.common import constants
+from susan.common import utils
+from susan.common import packet as packet_util
 
 
 class ARPHandler(object):
     """Handles ARP Requests"""
-    def __init__(self, datapath):
-        super(ARPHandler, self).__init__() 
+    def __init__(self):
+        super(ARPHandler, self).__init__()
 
     @staticmethod
     def _make_match(ofp_parser, ip_addr):
@@ -60,7 +61,7 @@ class ARPHandler(object):
     @classmethod
     def add_arp_responder(cls, datapath, dnat_mac,
                           ip_addr, port=None,
-                          priority=0, table=0):
+                          priority=0, table_id=0):
         """Add arp reponder flow for an entry"""
 
         ofproto = datapath.ofproto
@@ -75,10 +76,6 @@ class ARPHandler(object):
             ofp_parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)
         ]
 
-        # todo(thenakliman): Make generic flow methods(add, delete etc)
-        req = ofp_parser.OFPFlowMod(datapath, cookie=0,
-                                    command=ofproto.OFPFC_ADD,
-                                    idle_timeout=0, hard_timeout=0,
-                                    priority=priority, buffer_id=4294967295,
-                                    match=match, instructions=instructions)
-        datapath.send_msg(req)
+        packet_util.add_flow(datapath=datapath, match=match,
+                             instructions=instructions, priority=priority,
+                             table_id=table_id)

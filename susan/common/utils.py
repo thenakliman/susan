@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import netaddr
 import struct
 
+import netaddr
 from ryu.lib import addrconv
 
 
