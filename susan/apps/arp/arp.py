@@ -57,7 +57,6 @@ class ARPHandler(object):
                                    value=0),
             parser.OFPActionOutput(port)]
 
-
     @classmethod
     def add_arp_responder(cls, datapath, dnat_mac,
                           ip_addr, port=None,
@@ -73,7 +72,8 @@ class ARPHandler(object):
         actions = cls._get_actions(ofp_parser, dnat_mac, ip_addr, port)
 
         instructions = [
-            ofp_parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)
+            ofp_parser.OFPInstructionActions(
+                ofproto.OFPIT_APPLY_ACTIONS, actions)
         ]
 
         packet_util.add_flow(datapath=datapath, match=match,
