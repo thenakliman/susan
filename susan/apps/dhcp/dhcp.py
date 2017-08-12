@@ -18,6 +18,7 @@ from ryu.lib.packet import dhcp
 from ryu.lib.packet import ethernet
 
 from susan.apps.dhcp import constants as dhcp_const
+from susan.apps.dhcp import pack_option
 from susan.common import constants as const
 from susan.common import matcher
 from susan.common import packet as packet_util
@@ -30,6 +31,17 @@ SERVER_MAC = '16:b2:3b:34:24:77'
 YIP = '172.30.10.10'
 ROUTER = '172.30.10.1'
 LEASE_TIME = 10000
+
+
+def get_value(param):
+    mapper = {
+        dhcp_const.OPTIONS.LEASE_TIME: 100,
+        dhcp_const.OPTIONS.NETMASK: NETMASK,
+        dhcp_const.OPTIONS.ROUTER: ROUTER,
+        dhcp_const.OPTIONS.DNS_SERVER: '8.8.8.8',
+        dhcp_const.OPTIONS.SERVER_IDENTIFIER: SERVER_IP
+    }
+    return mapper.get(param, None)
 
 
 REQUEST_MAPPER = utils.make_enum(
@@ -53,9 +65,10 @@ class DHCPServer(object):
     @staticmethod
     def initialize(datapath):
         """Initialize DHCP application. It adds two flows
-           1. Move DHCP packet to table defined in constant module.
-           2. Move a DHCP Packet from DHCP table to controller.
+          1. Move DHCP packet to table defined in constant module.
+          2. Move a DHCP Packet from DHCP table to controller.
         """
+
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -94,13 +107,14 @@ class DHCPServer(object):
         dhcp_pkt = pkt.get_protocol(dhcp.dhcp)
         request_type = ''
         opts = dhcp_pkt.options.option_list
+        msg_type = dhcp_const.OPTIONS.MESSAGE_TYPE
+        discover = struct.pack('!B', dhcp_const.REQUEST.DISCOVER)
+        request = struct.pack('!B', dhcp_const.REQUEST.REQUEST)
         for option in opts:
-            if (option.tag == dhcp_const.OPTIONS.MESSAGE_TYPE and
-                    option.value == struct.pack('B', dhcp_const.REQUEST.DISCOVER)):
+            if option.tag == msg_type and option.value == discover:
                 request_type = REQUEST_MAPPER.DHCPDISCOVER
                 break
-            elif (option.tag == dhcp_const.OPTIONS.MESSAGE_TYPE and
-                  option.value == struct.pack('B', dhcp_const.REQUEST.REQUEST)):
+            elif option.tag == msg_type and option.value == request:
                 request_type = REQUEST_MAPPER.DHCPREQUEST
                 break
 
@@ -130,28 +144,51 @@ class DHCPServer(object):
         else:
             return pkt.get_packet(ethernet.ethernet).src_mac
 
+    @classmethod
+    def fetch_option_for_offer(cls, pkt):
+        opts = [dhcp.option(tag=dhcp_const.OPTIONS.MESSAGE_TYPE,
+                            value=struct.pack('B', dhcp_const.REQUEST.OFFER))]
+        opts.extend(cls.fetch_options(pkt))
+        return dhcp.options(opts)
+
+    @classmethod
+    def fetch_option_for_ack(cls, pkt):
+        opts = [dhcp.option(tag=dhcp_const.OPTIONS.MESSAGE_TYPE,
+                            value=struct.pack('B', dhcp_const.REQUEST.ACK))]
+        opts.extend(cls.fetch_options(pkt))
+        return dhcp.options(opts)
+
     @staticmethod
-    def send_offer(pkt, datapath, in_port):
+    def fetch_options(pkt):
+        dhcp_pkt = pkt.get_protocol(dhcp.dhcp)
+        requested_params = None
+        for option in dhcp_pkt.options.option_list:
+            if option.tag == dhcp_const.OPTIONS.PARAMETER_REQUEST:
+                requested_params = option.value
+                break
+
+        if requested_params is None:
+            return []
+
+        requested_params = struct.unpack('B' * len(requested_params),
+                                         requested_params)
+
+        option_list = [dhcp.option(tag=dhcp_const.OPTIONS.LEASE_TIME,
+                                   value=struct.pack('!I', LEASE_TIME))]
+
+        for param in requested_params:
+            value = get_value(param)
+            if value:
+                packed_value = pack_option.pack(param, value)
+                option_list.append(dhcp.option(tag=param, value=packed_value))
+
+        return option_list
+
+    @classmethod
+    def send_offer(cls, pkt, datapath, in_port):
         """Sends DHCP offer request"""
         ether_pkt = pkt.get_protocol(ethernet.ethernet)
-        # fixme(thenakliman) Add database layer for customized
-        # IP assignment.
-        # ipaddr = db.get_ip(ether_pkt.src)
-        option_list = [
-            dhcp.option(tag=dhcp_const.OPTIONS.MESSAGE_TYPE,
-                        value=struct.pack('B', dhcp_const.REQUEST.OFFER)),
-            dhcp.option(tag=dhcp_const.OPTIONS.LEASE_TIME,
-                        value=struct.pack('!', LEASE_TIME)),
-            dhcp.option(tag=dhcp_const.OPTIONS.NETMASK,
-                        value=utils.get_packed_address('255.255.255.0')),
-            dhcp.option(tag=dhcp_const.OPTIONS.ROUTER,
-                        value=utils.get_packed_address(ROUTER)),
-            dhcp.option(tag=dhcp_const.OPTIONS.DNS_SERVER,
-                        value=utils.get_packed_address('8.8.8.8')),
-            dhcp.option(tag=dhcp_const.OPTIONS.SERVER_IDENTIFIER,
-                        value=utils.get_packed_address(SERVER_IP))
-        ]
-        options = dhcp.options(option_list)
+        options = cls.fetch_option_for_offer(pkt)
         dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=ether_pkt.src,
                              xid=pkt.get_protocol(dhcp.dhcp).xid,
                              yiaddr=YIP,
@@ -159,13 +196,17 @@ class DHCPServer(object):
                              options=options)
 
         protocol_stacked = (
-            packet_util.get_ether_pkt(src=SERVER_MAC, dst=const.BROADCAST_MAC),
-            packet_util.get_ip_pkt(src=SERVER_IP, dst=const.BROADCAST_IP, proto=17),
+            packet_util.get_ether_pkt(src=SERVER_MAC,
+                                      dst=const.BROADCAST_MAC),
+            packet_util.get_ip_pkt(src=SERVER_IP,
+                                   dst=const.BROADCAST_IP, proto=17),
             packet_util.get_udp_pkt(src_port=dhcp_const.PORTS.SERVER_PORT,
                                     dst_port=dhcp_const.PORTS.CLIENT_PORT),
             dhcp_pkt)
 
-        packet_util.send_packet(datapath, packet_util.get_pkt(protocol_stacked), in_port)
+        packet_util.send_packet(datapath,
+                                packet_util.get_pkt(protocol_stacked),
+                                in_port)
 
     def handle_request(self, pkt, datapath, in_port):
         """Handles DHCPREQUEST packet"""
@@ -175,22 +216,7 @@ class DHCPServer(object):
     def send_ack(cls, pkt, datapath, port):
         """Make and send DHCPACK packet"""
         src_ether_pkt = pkt.get_protocol(ethernet.ethernet)
-        option_list = [
-            dhcp.option(tag=dhcp_const.OPTIONS.MESSAGE_TYPE,
-                        value=struct.pack('B', dhcp_const.REQUEST.ACK)),
-            dhcp.option(tag=dhcp_const.OPTIONS.LEASE_TIME,
-                        value=struct.pack('I', LEASE_TIME)),
-            dhcp.option(tag=dhcp_const.OPTIONS.NETMASK,
-                        value=utils.get_packed_address(NETMASK)),
-            dhcp.option(tag=dhcp_const.OPTIONS.REQUESTED_IP,
-                        value=utils.get_packed_address(YIP)),
-            dhcp.option(tag=dhcp_const.OPTIONS.SERVER_IDENTIFIER,
-                        value=utils.get_packed_address(SERVER_IP)),
-            dhcp.option(tag=dhcp_const.OPTIONS.ROUTER,
-                        value=utils.get_packed_address(ROUTER)),
-        ]
-
-        options = dhcp.options(option_list)
+        options = cls.fetch_option_for_ack(pkt)
         dhcp_pkt = dhcp.dhcp(op=dhcp.DHCP_BOOT_REPLY, chaddr=src_ether_pkt.src,
                              yiaddr=YIP,
                              xid=pkt.get_protocol(dhcp.dhcp).xid,
@@ -205,4 +231,6 @@ class DHCPServer(object):
                                     dst_port=dhcp_const.PORTS.CLIENT_PORT),
             dhcp_pkt)
 
-        packet_util.send_packet(datapath, packet_util.get_pkt(protocol_stacked), port)
+        packet_util.send_packet(datapath,
+                                packet_util.get_pkt(protocol_stacked),
+                                port)

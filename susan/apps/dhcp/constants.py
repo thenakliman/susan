@@ -28,16 +28,35 @@ PORTS = utils.make_enum(
 
 
 OPTIONS = utils.make_enum(
+    # Vendor Extensions
     NETMASK=1,
-    DNS_SERVER=6,
     ROUTER=3,
+    TIME_SERVER=4,
+    NAME_SERVER=5,
+    DNS_SERVER=6,
+    LOG_SERVER=7,
+    HOST_NAME=12,
+    BOOT_FILE=13,
+    DOMAIN_NAME=15,
+    END=255,
+
+    # IP Layer parameter per interface
     MTU=26,
+    BROADCAST_ADDR=28,
+
+    # DHCP EXTENSIONS
     REQUESTED_IP=50,
     LEASE_TIME=51,
     MESSAGE_TYPE=53,
     SERVER_IDENTIFIER=54,
+    PARAMETER_REQUEST=55,
+    MESSAGE=56,
+    MAX_DHCP_SIZE=57,
+    RENEWEL_TIME=58,
+    REBINDING_TIME=59,
     CLIENT_IDENTIFIER=61,
-    TFTP_SERVER_NAME=66
+    TFTP_SERVER_NAME=66,
+    BOOT_FILE_NAME=67
 )
 
 

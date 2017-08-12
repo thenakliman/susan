@@ -16,9 +16,11 @@
 from ryu.lib.packet import tcp
 from ryu.lib.packet import udp
 
+
 def is_valid_port(port):
     """Validates whether a port is None or now"""
     return bool(port is not None)
+
 
 def is_src_port(pkt, port):
     """Matches tcp/udp source port of a packet"""

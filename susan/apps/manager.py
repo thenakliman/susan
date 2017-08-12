@@ -27,6 +27,7 @@ from susan.common import packet as packet_util
 class AppManager(app_manager.RyuApp):
     """Takes care of all the applications and management of them."""
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
+
     def __init__(self, *args, **kwargs):
         super(AppManager, self).__init__(*args, **kwargs)
         self.apps = []
@@ -52,7 +53,6 @@ class AppManager(app_manager.RyuApp):
         datapath.send_msg(req)
         self.apps.append((dhcp.DHCPServer.matcher,
                           dhcp.DHCPServer(datapath).process_packet))
-
 
     def register(self, match, callback):
         """Registers an application to be managed by AppManager"""
