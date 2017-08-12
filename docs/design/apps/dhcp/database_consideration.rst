@@ -85,47 +85,52 @@ Subnet
 ------
 
   Columns: (
-      ID,
+      ID PRIMARY KEY,
       Name,
       Network,
-      Netmask,
-      StartIP,
-      EndIP,
+      cidr,
       Gateway,
-  }
-
-  primary_key, ID
-  +------+------+---------+---------+---------+-------+---------+
-  | ID   | name | network | netmask | StartIP | EndIP | Gateway |
-  +------+------+---------+---------+---------+-------+---------+
-  |      |      |         |         |         |       |         |
-  +------+------+---------+---------+---------+-------+---------+
-  |      |      |         |         |         |       |         |
-  +------+------+---------+---------+---------+-------+---------+
-
-binded_ips
-==========
-
-  This table handles IPs to be bind for which MAC and IPs are supplied
-  through some means to database.
-
-  binded_ips = (
-      ID,
-      IP,
-      MAC,
-      subnet,
-      Interface
   )
 
-  unique_key: ID
-  primary_key: IP, MAC, subnet.ID(foregin key), Interface
+  
+  primary_key, ID
+  +------+------+---------+---------+
+  | ID   | name | network | cidr    |
+  +------+------+---------+---------+
+  |      |      |         |         |
+  +------+------+---------+---------+
+  |      |      |         |         |
+  +------+------+---------+---------+
+
+  NOTE: Multiple range within a subnet can be supported with non overlapping start
+        and end IP address. How to choose primary key.
+
+Range
+=====
+
+  columns: (
+      ID PRIMARY KEY,
+      subnet.ID FOREIGN KEY,
+      StartIP,
+      EndIP,
+  )
+
+  Primary Key: ID
+  Foreign Key: ID (Subnet.id)
+
+  NOTE: This table has been introduced to make sure that multiple ranges can
+        exist with subnet.
 
 Parameters
 ==========
 
+
+Approach 1:
+
+
   Parameters: (
-      subnet.ID,
-      binded_ip.ID,
+      subnet.ID PRIMARY KEY FOREIGN KEY,
+      binded_ip.ID PRIMARY KEY FOREIGN KEY,
       1(or respecitve Name),
       2(or respective Name),
       3(or respective Name),
@@ -143,13 +148,44 @@ Parameters
   +--------------+-------+------+----------+
 
 
+  NOTE: Subnet and binded_ip.ID has been provide to make sure that host
+        parameters can be fetched based on subnet and IP binded_ip. If
+        host parameter is fetched based on binded IP then that IP must
+        be part of subnet.
+
+  It will require table to normalize because some of the paramers can
+  be list, for example list of nameserver, routers etc. So we might
+  have to create more tables to avoid redundancy and consistency issues
+  in the database.
+
+
+Approach 2:
+
+  Parameters: (
+      subnet.ID FOREIGN KEY,
+      binded_ip.ID FOREIGN KEY,
+      data(type pickle) # use dict
+  )
+
+  Of course, it will increase some processing power by pickle and unpickle.
+  It seems worthy to use, it avoids to create un neccessary tables and
+  does not make maintenance diffcult. However the maintenence cost is
+  going to be negligble with both the approaches because protocols rarely
+  changes or they just get expented and stay backward compatible. Protocol
+  change seems to be rare at this point, it is better to move with second
+  one.
+  
 Reserved_ip
 ===========
+  Purpose of this table is to maintain binded ips and reserved ips by
+  the dhcp server.
 
   reserved_ip = (
       IP,
       MAC,
       subnet_id,
+      state,
+      is_reserved,
       Interface,
       Lease_time,
       renew_time,
@@ -159,6 +195,55 @@ Reserved_ip
   primary_key: IP, MAc, subnet_id, Interface
   Foreign Key: subnet_id
 
+
+  is_reserved: maintains whether a particular ip address is reserved or not.
+               keeping "state" and its value can be, 'reserved', 'expired' and
+              'binded', it will introduce the problem of state transition, for
+               expample::
+
+                             +--------------+         +-----------+  +---------+
+                             | Unallocated: |         |   binded  |<-|reserved |
+                             | assign an IP | ---->   +-----------+  +---------+
+                             |  from range  |               |             |
+                             +--------------+               |             |
+                                    ^                       \/            |
+                                    |                 +-----------+       |
+                                    |                 |  expired  |       |
+                                    |                 +-----------+       |
+                                    |                       |             |
+                                    +-----------------------+-------------+
+                                          Y                       X
+
+              On What bassis, decision should be made, whether it go to X or Y.
+              Once an IP address is expired then it's state changes from
+              expired to reserved or delete that entry from the table. How do
+              we make decision for this.
+
+              So if two approaches can be,
+
+              Approach 1: Make one more table and just keep the IP address of
+                          reserved once. Once that we have to move then we can
+                          check whether it is reserved or not and we won't have
+                          to make decision, whether go to reserved state or
+                          unallocated. We can safely delete from binded table
+                          be sure reserved once already exist in table and next
+                          time makes decision.
+
+              Approach 2: We just keep one column, is_reserved a bool variable.
+                          Now, if an ip address is reserved then
+                          this must be true. So if IP expire then we don't
+                          to do anything because this entry is never to be
+                          conflicted with any other MAC address or to be given
+                          to anyone or so no need move to unallocated pool.
+                          If this entry is false then delete it, even if ever
+                          needed then expiry time is always there to identify
+                          the "expiry" state. So deleted entry goes to
+                          unallocated pool.
+
+             NOTE: To improve and make it better approach 2, let's use state as
+                   well to cleanly find out and expiry state and commit IPs.
+                   After offer this IP does not have to be given to a other
+                   nodes.
 
 ========
 Appendix
