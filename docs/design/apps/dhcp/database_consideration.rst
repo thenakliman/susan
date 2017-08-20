@@ -86,7 +86,6 @@ Subnet
 
   Columns: (
       ID PRIMARY KEY,
-      Name,
       Network,
       cidr,
       Gateway,
@@ -94,13 +93,13 @@ Subnet
 
   
   primary_key, ID
-  +------+------+---------+---------+
-  | ID   | name | network | cidr    |
-  +------+------+---------+---------+
-  |      |      |         |         |
-  +------+------+---------+---------+
-  |      |      |         |         |
-  +------+------+---------+---------+
+  +------+---------+---------+---------+
+  | ID   | network | cidr    | gateway |
+  +------+---------+---------+---------+
+  |      |         |         |         |
+  +------+---------+---------+---------+
+  |      |         |         |         |
+  +------+---------+---------+---------+
 
   NOTE: Multiple range within a subnet can be supported with non overlapping start
         and end IP address. How to choose primary key.
@@ -159,11 +158,11 @@ Approach 1:
   in the database.
 
 
-Approach 2:
+Approach 2: Finally selected Approach
 
   Parameters: (
       subnet.ID FOREIGN KEY,
-      binded_ip.ID FOREIGN KEY,
+      MAC,
       data(type pickle) # use dict
   )
 
@@ -192,7 +191,7 @@ Reserved_ip
       expire_time
   )
 
-  primary_key: IP, MAc, subnet_id, Interface
+  primary_key: MAC, subnet_id
   Foreign Key: subnet_id
 
 
@@ -240,7 +239,8 @@ Reserved_ip
                           the "expiry" state. So deleted entry goes to
                           unallocated pool.
 
-             NOTE: To improve and make it better approach 2, let's use state as
+             NOTE(Finally selected One):
+                   To improve and make it better approach 2, let's use state as
                    well to cleanly find out and expiry state and commit IPs.
                    After offer this IP does not have to be given to a other
                    nodes.
