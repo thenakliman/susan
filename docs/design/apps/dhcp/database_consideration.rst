@@ -246,6 +246,18 @@ Reserved_ip
                    nodes.
 
 ========
+Datapath
+========
+  datapath = (
+    id,
+    host_ip,
+    port,
+    subnet_id 
+  )
+
+
+
+========
 Appendix
 ========
 

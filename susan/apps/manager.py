@@ -22,7 +22,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3
 
-from susan.apps.dhcp import dhcp
+from susan.apps import dhcp
 from susan.common import constants
 from susan.common import packet as packet_util
 
@@ -54,8 +54,8 @@ class AppManager(app_manager.RyuApp):
                                   ofproto.OFPCML_NO_BUFFER)
 
         datapath.send_msg(req)
-        self.apps.append((dhcp.DHCPServer.matcher,
-                          dhcp.DHCPServer(datapath).process_packet))
+        self.apps.append((dhcp.DHCP.matcher,
+                          dhcp.DHCP(datapath).process_packet))
 
     def register(self, match, callback):
         """Registers an application to be managed by AppManager"""

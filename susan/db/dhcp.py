@@ -12,12 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc, ABCMeta
+from abc import ABCMeta
+from abc import abstractmethod
+
 import six
 
 
 @six.add_metaclass(ABCMeta)
-class DHCPDB(object):
+class DHCPdb(object):
     def __init__(self):
         pass
 
@@ -34,7 +36,7 @@ class DHCPDB(object):
         pass
 
     @abstractmethod
-    def get_parameters(subnet_id, mac=None):
+    def get_parameter(subnet_id, mac=None):
         pass
 
     @abstractmethod
@@ -42,7 +44,7 @@ class DHCPDB(object):
         pass
 
     @abstractmethod
-    def add_subnet(self, network, cidr, gateway=None):
+    def create_subnet(self, network, cidr, gateway=None):
         pass
 
     @abstractmethod
@@ -50,17 +52,17 @@ class DHCPDB(object):
         pass
 
     @abstractmethod
-    def add_range(self, subnet_id, start_ip, end_ip):
+    def create_range(self, subnet_id, start_ip, end_ip):
         pass
 
     @abstractmethod
-    def add_data(self, subnet_id, mac=None, data=None):
+    def add_parameter(self, subnet_id, mac=None, data=None):
         pass
 
     @abstractmethod
-    def add_reserve_ip(self, ip, mac, subnet_id, state,
-                       interface, is_reserved=True, lease_time=None,
-                       renew_time=None, expire_time=None):
+    def add_reserved_ip(self, ip, mac, subnet_id, state,
+                        interface, is_reserved=True, lease_time=None,
+                        renew_time=None, expire_time=None):
         pass
 
     @abstractmethod
@@ -68,13 +70,13 @@ class DHCPDB(object):
         pass
 
     @abstractmethod
-    def update_data(self, subnet_id, mac=None, data=None):
+    def update_parameter(self, subnet_id, mac=None, data=None):
         pass
 
     @abstractmethod
-    def update_reserve_ip(self, mac, subnet_id, ip=None,
-                          interface=None, is_reserved=True, lease_time=None,
-                          renew_time=None, expire_time=None):
+    def update_reserved_ip(self, mac, subnet_id, ip=None,
+                           interface=None, is_reserved=True, lease_time=None,
+                           renew_time=None, expire_time=None):
         pass
 
     @abstractmethod
@@ -86,9 +88,9 @@ class DHCPDB(object):
         pass
 
     @abstractmethod
-    def delete_data(self, subnet_id, mac):
+    def delete_parameter(self, subnet_id, mac):
         pass
 
     @abstractmethod
-    def delete_reserve_ip(self, mac, subnet_id):
+    def delete_reserved_ip(self, mac, subnet_id):
         pass

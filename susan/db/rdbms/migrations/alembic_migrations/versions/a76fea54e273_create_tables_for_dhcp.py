@@ -21,7 +21,7 @@ def upgrade():
     op.create_table(
         'subnet',
         sa.Column('id', sa.String(36), primary_key=True),
-        sa.Column('network', sa.String(64), nullable=False),
+#        sa.Column('network', sa.String(64), nullable=False),
         sa.Column('cidr', sa.Integer, nullable=False),
         sa.Column('gateway', sa.String(64), nullable=False),
         sa.Column('server', sa.String(64), sa.ForeignKey(
@@ -30,16 +30,16 @@ def upgrade():
     op.create_table(
         'ip_range',
         sa.Column('id', sa.String(36), primary_key=True),
-        sa.Column('subnet_id', sa.String(255), sa.ForeignKey(
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey(
                       'subnet.id', ondelete='CASCADE'), nullable=False),
         sa.Column('start_ip', sa.String(64), nullable=False),
         sa.Column('end_ip', sa.String(64), nullable=False))
 
     op.create_table(
         'parameter',
-        sa.Column('subnet_id', sa.String(255), sa.ForeignKey('subnet.id',
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
                       ondelete='CASCADE'), nullable=False, primary_key=True),
-        sa.Column('mac_address', sa.String(32), sa.ForeignKey(
+        sa.Column('mac', sa.String(36), sa.ForeignKey(
                       'ReservedIP.mac', ondelete='CASCADE'), nullable=True,
                   primary_key=True),
 
@@ -48,8 +48,8 @@ def upgrade():
     op.create_table(
         'reserved_ip',
         sa.Column('ip', sa.String(64), nullable=False),
-        sa.Column('mac', sa.String(64), nullable=False, primary_key=True),
-        sa.Column('subnet_id', sa.String(255), sa.ForeignKey('subnet.id',
+        sa.Column('mac', sa.String(36), nullable=False, primary_key=True),
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
                       ondelete='CASCADE'), nullable=False, primary_key=True),
         sa.Column('is_reserved', sa.Boolean(), nullable=False,
                   server_default=sa.sql.false()),
@@ -57,3 +57,11 @@ def upgrade():
         sa.Column('lease_time', sa.TIMESTAMP, nullable=True),
         sa.Column('renew_time', sa.TIMESTAMP, nullable=True),
         sa.Column('expiry_time', sa.TIMESTAMP, nullable=True))
+
+    op.create_table(
+        'datapath',
+        sa.Column('host', sa.String(64), nullable=False, primary_key=True),
+        sa.Column('id', sa.String(32), nullable=False, primary_key=True),
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
+                      ondelete='CASCADE'), nullable=False),
+        sa.Column('interface', sa.Integer, nullable=False))

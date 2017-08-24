@@ -12,24 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from sqlalchemy import orm
-import sqlalchemy as sa
 
-SQL_SESSION = None
-
-
-def create_engine(connection=None):
-    global SQL_SESSION
-
-    if connection is None:
-        connection = "sqlite:////var/lib/sqlite/susan"
-
-    engine = sa.create_engine(connection, echo=True)
-    SQL_SESSION = orm.sessionmaker(bind=engine)
+class SusanException(Exception):
+    pass
 
 
-def get_session():
-    if SQL_SESSION is None:
-        create_engine()
+class NotFoundException(Exception):
+    message = ("Not found") 
 
-    return SQL_SESSION()
+
+class SubnetNotFoundException(NotFoundException):
+   message = ("%(subnet) could not be found")
