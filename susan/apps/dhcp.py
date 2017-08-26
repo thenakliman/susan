@@ -42,31 +42,34 @@ class DHCP(dhcp.DHCPServer):
         """
         return super(DHCP, self).handle_request(pkt, datapath, in_port)
 
-    def get_ip(self, mac, ip):
+    def get_available_ip(self, mac, ip, interface):
         """Gets the free available IP"""
-        return
+        return '172.30.10.35'
 
-    def get_subnet_id(self, host, dp, interface):
-        return self.db.get_subnet_id(host=host, dp=dp, interface=interface)
+    def get_subnet_id(self, host, datapath, interface):
+        return self.db.get_subnet_id(host=host, datapath=datapath,
+                                     interface=interface)
 
-    def get_parameters(self, host, dp, interface, mac):
+    def get_parameters(self, host, datapath, interface, mac):
         """Returns host data for the request"""
-        subnet_id = self.get_subnet_id(host, dp, interface)
+        subnet_id = self.get_subnet_id(host, datapath, interface)
         return self.db.get_parameter(subnet_id, mac)
 
-    def get_dhcp_server_info(self, host, dp, interface):
+    def get_dhcp_server_info(self, host, datapath, interface):
         """Returns mac and ip of the dhcp server being used"""
-        subnet_id = self.get_subnet_id(host, dp, interface)
+        subnet_id = self.get_subnet_id(host, datapath, interface)
         return self.db.get_dhcp_server_info(subnet_id)
 
-    def get_next_server(self, host, dp, interface):
+    def get_next_server_ip(self, host, datapath, interface):
         "Get next server ip"""
-        parameters = self.get_parameters(host, dp, interface)
-        return parameters.get(const.TFTP_SERVER_NAME)
+        # FIXME(thenakliman)
+        return '172.30.10.1'
+        parameters = self.get_parameters(host, datapath, interface)
+        return parameters.get(const.OPTIONS.TFTP_SERVER_NAME)
 
-    def get_lease_time(self, host, dp, interface, mac):
+    def get_lease_time(self, host, datapath, interface, mac):
         """Get lease time for a host"""
-        parameter = self.get_parameters(host, dp, interface, mac)
+        parameter = self.get_parameters(host, datapath, interface, mac)
         if parameter is None:
             return const.DEFAULT_LEASE_TIME
 

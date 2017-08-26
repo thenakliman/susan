@@ -1,4 +1,4 @@
-#d Copyright 2017 <thenakliman@gmail.com>
+# Copyright 2017 <thenakliman@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -12,9 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import sqlalchemy as sa
-import uuid
-
 from susan.db import dhcp as dhcp_db
 from susan.db.rdbms.models import dhcp as d_model
 from susan.db import rdbms
@@ -22,7 +19,7 @@ from susan.db import rdbms
 
 class Subnet(dhcp_db.DHCPdb):
     def __init__(self):
-        pass
+        super(Subnet, self).__init__()
 
     def create_subnet(self, network, cidr, gateway=None):
         session = rdbms.get_session()
@@ -35,48 +32,53 @@ class Subnet(dhcp_db.DHCPdb):
 
     def delete_subnet(self, id_):
         session = rdbms.get_session()
-        session.query(d_model.Subnet).filter_by(id=_id).delete()
+        session.query(d_model.Subnet).filter_by(id=id_).delete()
 
-    def get_subnet(self, id_):
+    @staticmethod
+    def get_subnet(id_):
+        session = rdbms.get_session()
         return session.query(d_model.Subnet).filter_by(id=id_).one_or_none()
 
 
 class Range(dhcp_db.DHCPdb):
     def __init__(self):
-        pass
+        super(Range, self).__init__()
 
-    def create_range(self,  subnet_id, start_ip, end_ip):
+    def create_range(self, subnet_id, start_ip, end_ip):
         session = rdbms.get_session()
-        row = d_model.Range(subnet_id=subnet_id, start_ip=start_ip,
-                            end_ip=end_ip)
+        row = d_model.IPRange(subnet_id=subnet_id, start_ip=start_ip,
+                              end_ip=end_ip)
         session.add(row)
         session.flush()
 
     def update_range(self, subnet_id, start_ip=None, end_ip=None):
         pass
 
-    def delete_range(self, subnet_id):
-        session = rdbms.get_session()
-        d_model.Range(d_model.Range).filter_by(subnet_id=subnet_id).delete()
+    @staticmethod
+    def delete_range(subnet_id):
+        d_model.IPRange(d_model.IPRange).filter_by(subnet_id=subnet_id).delete()
 
-    def get_range(self, subnet_id, start_ip, end_ip):
+    @staticmethod
+    def get_range(subnet_id, start_ip, end_ip):
         session = rdbms.get_session()
-        return seesion.query(d_model.Range).filter_by(subnet_id=subnet_id,
-                                                      start_ip=start_ip,
-                                                      end_ip=end_ip)
+        return session.query(d_model.IPRange).filter_by(subnet_id=subnet_id,
+                                                        start_ip=start_ip,
+                                                        end_ip=end_ip)
 
 
 class ReservedIP(dhcp_db.DHCPdb):
     def __init__(self):
-        pass
+        super(ReservedIP, self).__init__()
 
-    def delete_reserved_ip(self,  mac, subnet_id):
+    @staticmethod
+    def delete_reserved_ip(mac, subnet_id):
         session = rdbms.get_session()
-        session.query(d_model.ReservedIP).filter_by(mac=mac,
+        session.query(d_model.ReservedIP).filter_by(
+            mac=mac,
             subnet_id=subnet_id).delete()
 
-
-    def add_reserved_ip(self,  ip, mac, subnet_id, state,
+    @staticmethod
+    def add_reserved_ip(ip, mac, subnet_id, state,
                         interface, is_reserved=True, lease_time=None,
                         renew_time=None, expire_time=None):
         session = rdbms.get_session()
@@ -86,7 +88,7 @@ class ReservedIP(dhcp_db.DHCPdb):
                                  lease_time=lease_time,
                                  expire_time=expire_time)
 
-        session.add()
+        session.add(row)
         session.flush()
 
     def update_reserved_ip(self, mac, subnet_id, ip=None,
@@ -94,7 +96,8 @@ class ReservedIP(dhcp_db.DHCPdb):
                            renew_time=None, expire_time=None):
         pass
 
-    def get_reserved_ip(self, mac, subnet_id, interface):
+    @staticmethod
+    def get_reserved_ip(mac, subnet_id, interface):
         session = rdbms.get_session()
         return session.query(d_model.ReservedIP).filter_by(
             mac=mac, subnet_id=subnet_id, interface=interface).one_or_none()
@@ -102,16 +105,17 @@ class ReservedIP(dhcp_db.DHCPdb):
 
 class Parameter(dhcp_db.DHCPdb):
     def __init__(self):
-        pass
+        super(Parameter, self).__init__()
 
-    def add_parameter(self, subnet_id,
-                         mac=None, data=None):
+    @staticmethod
+    def add_parameter(subnet_id, mac=None, data=None):
         session = rdbms.get_session()
-        row = d_mode.Parameter(subnet_id=subnet_id, mac=mac, data=data)
+        row = d_model.Parameter(subnet_id=subnet_id, mac=mac, data=data)
         session.add(row)
         session.flush()
 
-    def delete_parameter(self,  subnet_id, mac):
+    @staticmethod
+    def delete_parameter(subnet_id, mac):
         session = rdbms.get_session()
         session.query(d_model.Parameter).filter_by(subnet_id=subnet_id,
                                                    mac=mac).delete()
@@ -119,22 +123,24 @@ class Parameter(dhcp_db.DHCPdb):
     def update_parameter(self, subnet_id, mac=None, data=None):
         pass
 
-    def get_parameter(self, subnet_id, mac=None):
+    @staticmethod
+    def get_parameter(subnet_id, mac=None):
         session = rdbms.get_session()
         return session.query(d_model.Parameter).filter_by(
             subnet_id=subnet_id, mac=mac).one_or_none()
 
 class Datapath(dhcp_db.DHCPdb):
     def __init__(self):
+        super(Datapath, self).__init__()
+
+    def create_datapath(self, host, datapath_id, subnet_id, port):
         pass
 
-    def create_datapath(self, host, dp_id, subnet_id, port):
+    def update_datapath(self, host, datapath_id, subnet_id, port):
         pass
 
-    def update_datapath(self, host, dp_id, subnet_id, port):
-        pass
-
-    def get_datapath(self, host, datapath_id, interface):
+    @staticmethod
+    def get_datapath(host, datapath_id, interface):
         session = rdbms.get_session()
         return session.query(d_model.Datapath).filter_by(
             host=host, id=datapath_id, interface=interface).one_or_none()
@@ -142,13 +148,13 @@ class Datapath(dhcp_db.DHCPdb):
 
 class DHCPDB(Subnet, Range, ReservedIP, Parameter, Datapath):
     def __init__(self):
-        pass
+        super(DHCPDB, self).__init__()
 
-    def release_ip(self, subnet_id, mac):
-        self.delete_release_ip(subnet_id, mac)
+    def release_ip(self, ip, subnet_id, mac):
+        self.delete_reserved_ip(subnet_id, mac)
 
-    def get_ip(self, subnet_id, mac):
-        pass
+    def get_ip(self, host, datapath, in_port):
+        return '172.30.10.35'
 
     def commit_ip(self, subnet_id, mac, ip):
         pass
@@ -156,9 +162,25 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter, Datapath):
     def reserve_ip(self, ip, subnet_id, mac):
         pass
 
-    def get_subnet_id(self, host, dp, interface):
-        row = self.get_datapath(host, datapath_id=dp, interface=interface)
+    def get_dhcp_server_ip(self, subnet_id):
+        row = self.get_subnet(subnet_id)
+        return row.server
+
+    def get_mac(self, subnet_id, ip):
+        session = rdbms.get_session()
+        row = session.query(d_model.ReservedIP).filter_by(
+            ip=ip, subnet_id=subnet_id).one_or_none()
+
+        return row.mac
+
+    def get_dhcp_server_info(self, subnet_id):
+        dhcp_server_ip = self.get_dhcp_server_ip(subnet_id)
+        dhcp_server_mac = self.get_mac(subnet_id, dhcp_server_ip)
+        return (dhcp_server_mac, dhcp_server_ip)
+
+    def get_subnet_id(self, host, datapath, interface):
+        row = self.get_datapath(host, datapath_id=datapath, interface=interface)
         try:
             return row.subnet_id
         except AttributeError:
-            raise SubnetNotFoundException()
+            return None

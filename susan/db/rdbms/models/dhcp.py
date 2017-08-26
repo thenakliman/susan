@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import orm
 
 Base = declarative_base()
 
@@ -23,7 +23,7 @@ class Subnet(Base):
     __tablename__ = 'subnet'
 
     id = sa.Column(sa.String(36), primary_key=True)
-    # network = sa.Column(sa.String(64), nullable=False)
+    network = sa.Column(sa.String(64), nullable=False)
     cidr = sa.Column(sa.Integer, nullable=False)
     gateway = sa.Column(sa.String(64), nullable=False)
     # Currently only dhcp server per subnet is supported.
@@ -31,8 +31,9 @@ class Subnet(Base):
     # It can create circular depencency if nullable is False is used.
     # Therefore we might not be able to add any entried.
     server = sa.Column(sa.String(64), sa.ForeignKey('reserved_ip.ip',
-                          ondelete='CASCADE'), nullable=True)
-    ip_range = relationship("IPRange")
+                                                    ondelete='CASCADE'),
+                       nullable=True)
+    ip_range = orm.relationship("IPRange")
 
 
 class IPRange(Base):
@@ -40,7 +41,8 @@ class IPRange(Base):
 
     id = sa.Column(sa.String(36), primary_key=True)
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
-                          ondelete='CASCADE'), nullable=False)
+                                                       ondelete='CASCADE'),
+                          nullable=False)
     start_ip = sa.Column(sa.String(64), nullable=False)
     end_ip = sa.Column(sa.String(64), nullable=False)
 
@@ -49,14 +51,14 @@ class Parameter(Base):
     __tablename__ = 'parameter'
 
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
-                          ondelete='CASCADE'), nullable=False,
-                          primary_key=True)
+                                                       ondelete='CASCADE'),
+                          nullable=False, primary_key=True)
 
     # IP has to be reserved for other keys, if want to fetch parameters
     # based on mac
     mac = sa.Column(sa.String(32), sa.ForeignKey('reserved_ip.mac',
-                        ondelete='CASCADE'), nullable=True,
-                    primary_key=True)
+                                                 ondelete='CASCADE'),
+                    nullable=True, primary_key=True)
 
     data = sa.Column(sa.PickleType, nullable=True, primary_key=True)
 
@@ -67,15 +69,16 @@ class ReservedIP(Base):
     ip = sa.Column(sa.String(64), nullable=False)
     mac = sa.Column(sa.String(36), nullable=False, primary_key=True)
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
-                              ondelete='CASCADE'), nullable=False,
-                          primary_key=True)
+                                                       ondelete='CASCADE'),
+                          nullable=False, primary_key=True)
+
     is_reserved = sa.Column(sa.Boolean(), nullable=False,
                             server_default=sa.sql.false())
     interface = sa.Column(sa.String(32), nullable=True)
     lease_time = sa.Column(sa.TIMESTAMP, nullable=True)
     renew_time = sa.Column(sa.TIMESTAMP, nullable=True)
     expiry_time = sa.Column(sa.TIMESTAMP, nullable=True)
-    subnet = relationship('Subnet', foreign_keys=[subnet_id])
+    subnet = orm.relationship('Subnet', foreign_keys=[subnet_id])
 
 
 
@@ -85,6 +88,8 @@ class Datapath(Base):
     id = sa.Column(sa.String(36), primary_key=True)
     host = sa.Column(sa.String(64), nullable=False)
     subnet_id = sa.Column(sa.String(32), sa.ForeignKey('subnet.id',
-                              ondelete='CASCADE'), nullable=True)
+                                                       ondelete='CASCADE'),
+                          nullable=True)
+
     interface = sa.Column(sa.Integer, nullable=True)
-    subnet = relationship('Subnet')
+    subnet = orm.relationship('Subnet')

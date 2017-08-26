@@ -18,8 +18,8 @@ class SusanException(Exception):
 
 
 class NotFoundException(Exception):
-    message = ("Not found") 
+    message = ("Not found")
 
 
 class SubnetNotFoundException(NotFoundException):
-   message = ("%(subnet) could not be found")
+    message = ("%(subnet) could not be found")

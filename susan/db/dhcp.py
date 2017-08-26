@@ -28,7 +28,7 @@ class DHCPdb(object):
         pass
 
     @abstractmethod
-    def get_ip(self, subnet_id, mac):
+    def get_ip(self, host, dp, interface):
         pass
 
     @abstractmethod
@@ -88,9 +88,21 @@ class DHCPdb(object):
         pass
 
     @abstractmethod
-    def delete_parameter(self, subnet_id, mac):
+    def delete_parameter(subnet_id, mac):
         pass
 
     @abstractmethod
     def delete_reserved_ip(self, mac, subnet_id):
+        pass
+
+    @abstractmethod
+    def get_dhcp_server_info(self, subnet_id):
+        pass
+
+    @abstractmethod
+    def get_mac(self, subnet_id, ip):
+        pass
+
+    @abstractmethod
+    def get_dhcp_server_ip(self, subnet_id):
         pass
