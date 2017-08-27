@@ -23,6 +23,7 @@ from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3
 
 from susan.apps import dhcp
+from susan.apps import datapath
 from susan.common import constants
 from susan.common import packet as packet_util
 
@@ -33,7 +34,13 @@ class AppManager(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(AppManager, self).__init__(*args, **kwargs)
+        self.datapaths = set()
         self.apps = []
+
+    def _add_datapath(self, dp):
+        (host, port) = dp.address
+        if dp.id not in self.datapaths:
+            datapath.Datapath().add_datapath(dp.id, host, port)
 
     # pylint: disable=no-member,no-self-use,locally-disabled
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
@@ -44,6 +51,7 @@ class AppManager(app_manager.RyuApp):
         datapath = event.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        self._add_datapath(datapath)
         packet_util.send_to_controller(parser=parser,
                                        ofproto=ofproto,
                                        datapath=datapath,

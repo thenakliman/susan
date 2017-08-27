@@ -1,7 +1,7 @@
 """create tables for dhcp
 
 Revision ID: a76fea54e273
-Revises: None
+Revises: ce8079bf4ab7
 Create Date: 2017-08-19 20:47:08.004224
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql as pg
 
 # revision identifiers, used by Alembic.
 revision = 'a76fea54e273'
-down_revision = None
+down_revision = 'ce8079bf4ab7'
 branch_labels = None
 depends_on = None
 
@@ -60,12 +60,3 @@ def upgrade():
         sa.Column('lease_time', sa.TIMESTAMP, nullable=True),
         sa.Column('renew_time', sa.TIMESTAMP, nullable=True),
         sa.Column('expiry_time', sa.TIMESTAMP, nullable=True))
-
-    op.create_table(
-        'datapath',
-        sa.Column('host', sa.String(64), nullable=False, primary_key=True),
-        sa.Column('id', sa.String(32), nullable=False, primary_key=True),
-        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
-                                                            ondelete='CASCADE'),
-                  nullable=False),
-        sa.Column('interface', sa.Integer, nullable=False))

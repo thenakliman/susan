@@ -129,24 +129,7 @@ class Parameter(dhcp_db.DHCPdb):
         return session.query(d_model.Parameter).filter_by(
             subnet_id=subnet_id, mac=mac).one_or_none()
 
-class Datapath(dhcp_db.DHCPdb):
-    def __init__(self):
-        super(Datapath, self).__init__()
-
-    def create_datapath(self, host, datapath_id, subnet_id, port):
-        pass
-
-    def update_datapath(self, host, datapath_id, subnet_id, port):
-        pass
-
-    @staticmethod
-    def get_datapath(host, datapath_id, interface):
-        session = rdbms.get_session()
-        return session.query(d_model.Datapath).filter_by(
-            host=host, id=datapath_id, interface=interface).one_or_none()
-
-
-class DHCPDB(Subnet, Range, ReservedIP, Parameter, Datapath):
+class DHCPDB(Subnet, Range, ReservedIP, Parameter):
     def __init__(self):
         super(DHCPDB, self).__init__()
 
