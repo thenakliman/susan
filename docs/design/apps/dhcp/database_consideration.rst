@@ -76,7 +76,12 @@ Possible Interactions
 4. Get the parameters for a Host
 5. Get all the parameters for a host
 6. Release IP address to the available Pool
-
+7. Get dhcp server information(MAC, IP)
+8. Delete or update dhcp server information
+9. Get range for a subnet to find IP for allocation
+10. Update or delete some parameter
+11. Add, update and delete datapath
+12. Add port to a datapath
 
 Possible Database Schema
 ========================
@@ -89,17 +94,17 @@ Subnet
       Network,
       cidr,
       Gateway,
+      server,
+      next_server,
   )
 
   
   primary_key, ID
-  +------+---------+---------+---------+
-  | ID   | network | cidr    | gateway |
-  +------+---------+---------+---------+
-  |      |         |         |         |
-  +------+---------+---------+---------+
-  |      |         |         |         |
-  +------+---------+---------+---------+
+  +------+---------+---------+---------+--------+-------------+
+  | ID   | network | cidr    | gateway | server | next_server |
+  +------+---------+---------+---------+--------+-------------+
+  |      |         |         |         |        |             |
+  +------+---------+---------+---------+----------------------+
 
   NOTE: Multiple range within a subnet can be supported with non overlapping start
         and end IP address. How to choose primary key.
@@ -108,13 +113,12 @@ Range
 =====
 
   columns: (
-      ID PRIMARY KEY,
       subnet.ID FOREIGN KEY,
       StartIP,
       EndIP,
   )
 
-  Primary Key: ID
+  Primary Key: (subnet.id, startIP, endIP)
   Foreign Key: ID (Subnet.id)
 
   NOTE: This table has been introduced to make sure that multiple ranges can

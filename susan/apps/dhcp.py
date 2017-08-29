@@ -42,34 +42,34 @@ class DHCP(dhcp.DHCPServer):
         """
         return super(DHCP, self).handle_request(pkt, datapath, in_port)
 
-    def get_available_ip(self, mac, ip, interface):
+    def get_available_ip(self, datapath, interface):
         """Gets the free available IP"""
         return '172.30.10.35'
 
-    def get_subnet_id(self, host, datapath, interface):
-        return self.db.get_subnet_id(host=host, datapath=datapath,
+    def get_subnet_id(self, datapath, interface):
+        return self.db.get_subnet_id(datapath=datapath,
                                      interface=interface)
 
-    def get_parameters(self, host, datapath, interface, mac):
+    def get_parameters(self, datapath, interface, mac):
         """Returns host data for the request"""
-        subnet_id = self.get_subnet_id(host, datapath, interface)
+        subnet_id = self.get_subnet_id(datapath, interface)
         return self.db.get_parameter(subnet_id, mac)
 
-    def get_dhcp_server_info(self, host, datapath, interface):
+    def get_dhcp_server_info(self, datapath, interface):
         """Returns mac and ip of the dhcp server being used"""
-        subnet_id = self.get_subnet_id(host, datapath, interface)
+        subnet_id = self.get_subnet_id(datapath, interface)
         return self.db.get_dhcp_server_info(subnet_id)
 
-    def get_next_server_ip(self, host, datapath, interface):
+    def get_next_server_ip(self, datapath, interface):
         "Get next server ip"""
         # FIXME(thenakliman)
         return '172.30.10.1'
         parameters = self.get_parameters(host, datapath, interface)
         return parameters.get(const.OPTIONS.TFTP_SERVER_NAME)
 
-    def get_lease_time(self, host, datapath, interface, mac):
+    def get_lease_time(self, datapath, interface, mac):
         """Get lease time for a host"""
-        parameter = self.get_parameters(host, datapath, interface, mac)
+        parameter = self.get_parameters(datapath, interface, mac)
         if parameter is None:
             return const.DEFAULT_LEASE_TIME
 

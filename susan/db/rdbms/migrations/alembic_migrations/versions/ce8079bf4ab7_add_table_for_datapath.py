@@ -29,7 +29,7 @@ def upgrade():
                                                               ondelete='CASCADE'),
                   primary_key=True),
         sa.Column('mac', sa.String(64), nullable=False),
-        sa.Column('port', sa.String(10), nullable=False),
+        sa.Column('port', sa.String(10), nullable=False, primary_key=True),
         sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
                                                             ondelete='CASCADE'),
                   nullable=False))

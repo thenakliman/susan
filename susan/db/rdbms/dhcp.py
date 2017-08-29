@@ -14,6 +14,8 @@
 
 from susan.db import dhcp as dhcp_db
 from susan.db.rdbms.models import dhcp as d_model
+from susan.db.rdbms import datapath
+from susan.db.rdbms import port
 from susan.db import rdbms
 
 
@@ -129,14 +131,16 @@ class Parameter(dhcp_db.DHCPdb):
         return session.query(d_model.Parameter).filter_by(
             subnet_id=subnet_id, mac=mac).one_or_none()
 
-class DHCPDB(Subnet, Range, ReservedIP, Parameter):
+class DHCPDB(Subnet, Range, ReservedIP, Parameter,
+             datapath.Datapath, port.Port):
+
     def __init__(self):
         super(DHCPDB, self).__init__()
 
     def release_ip(self, ip, subnet_id, mac):
         self.delete_reserved_ip(subnet_id, mac)
 
-    def get_ip(self, host, datapath, in_port):
+    def get_ip(self, datapath, in_port):
         return '172.30.10.35'
 
     def commit_ip(self, subnet_id, mac, ip):
@@ -161,8 +165,8 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter):
         dhcp_server_mac = self.get_mac(subnet_id, dhcp_server_ip)
         return (dhcp_server_mac, dhcp_server_ip)
 
-    def get_subnet_id(self, host, datapath, interface):
-        row = self.get_datapath(host, datapath_id=datapath, interface=interface)
+    def get_subnet_id(self, datapath, interface):
+        row = self.get_port(datapath_id=datapath, port=interface)
         try:
             return row.subnet_id
         except AttributeError:

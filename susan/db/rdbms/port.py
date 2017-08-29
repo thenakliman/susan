@@ -17,7 +17,7 @@ from susan.db.rdbms.models import port as port_model
 from susan.db import rdbms
 
 
-class Port(port_db.Datapth):
+class Port(port_db.Port):
     def __init__(self, *args, **kwargs):
         super(Port, self).__init__(*args, **kwargs)
 
@@ -40,8 +40,8 @@ class Port(port_db.Datapth):
                                                  subnet_id=subnet_id).delete()
 
     @staticmethod
-    def get_port(datapath_id, subnet_id):
+    def get_port(datapath_id, port):
         session = rdbms.get_session()
         return session.query(port_model.Port).filter_by(
             datapath_id=datapath_id,
-            subnet_id=subnet_id).one_or_none()
+            port=port).one_or_none()

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from sqlalchemy import exc
+
 from susan.db import datapath as datapath_db
 from susan.db.rdbms.models import datapath as dp_model
 from susan.db import rdbms
@@ -26,7 +28,10 @@ class Datapath(datapath_db.Datapath):
         session = rdbms.get_session()
         row = dp_model.Datapath(id=id_, host=host, port=port)
         session.add(row)
-        session.flush()
+        try:
+            session.flush()
+        except  exc.IntegrityError:
+            pass
 
     @staticmethod
     def update_datapath(id, host=None, port=None):
