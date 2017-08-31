@@ -56,25 +56,24 @@ class Parameter(Base):
 
     # IP has to be reserved for other keys, if want to fetch parameters
     # based on mac
-    mac = sa.Column(sa.String(32), sa.ForeignKey('reserved_ip.mac',
+    mac = sa.Column(sa.String(32), sa.ForeignKey('port.mac',
                                                  ondelete='CASCADE'),
                     nullable=True, primary_key=True)
 
-    data = sa.Column(sa.PickleType, nullable=True, primary_key=True)
+    data = sa.Column(sa.PickleType, nullable=True)
 
 
 class ReservedIP(Base):
     __tablename__ = 'reserved_ip'
 
     ip = sa.Column(sa.String(64), nullable=False)
-    mac = sa.Column(sa.String(36), nullable=False, primary_key=True)
+    mac = sa.Column(sa.String(32), nullable=False, primary_key=True)
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
                                                        ondelete='CASCADE'),
                           nullable=False, primary_key=True)
 
     is_reserved = sa.Column(sa.Boolean(), nullable=False,
                             server_default=sa.sql.false())
-    interface = sa.Column(sa.String(32), nullable=True)
     lease_time = sa.Column(sa.TIMESTAMP, nullable=True)
     renew_time = sa.Column(sa.TIMESTAMP, nullable=True)
     expiry_time = sa.Column(sa.TIMESTAMP, nullable=True)

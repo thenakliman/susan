@@ -17,9 +17,44 @@ class SusanException(Exception):
     pass
 
 
-class NotFoundException(Exception):
+class NotFoundException(SusanException):
     message = ("Not found")
 
 
+class ConflictException(SusanException):
+    message = ("Conflict occured")
+
+
 class SubnetNotFoundException(NotFoundException):
-    message = ("%(subnet) could not be found")
+    message = ("Subnet id of %(interface)s on %(datapath_id) "
+               "could not be found")
+
+class SubnetNotDefinedException(NotFoundException):
+    message = ("Subnet %(subnet_id)s is not registered")
+
+
+class DHCPServerNotFoundException(NotFoundException):
+    message = ("DHCP server for %(subnet_id) subnet not found")
+
+
+class ParameterNotFoundException(NotFoundException):
+    message = ("Parameter for %(mac)s on %(port)s port of  %(datapath_id)s not found")
+
+
+class AlreadyAssignedDiffIPException(ConflictException):
+    message = ("Aleardy assigned %(ip)s to %(mac)s in %(subnet_id)s")
+
+
+class AlreadyAssignedIPException(ConflictException):
+    message = ("Aleardy assigned %(ip)s to %(mac)s in %(subnet_id)s")
+
+
+class MACNotFound(NotFoundException):
+    message = ("MAC for %(ip)s in %(subnet_id)s could not be found")
+
+
+class DHCPNotFound(NotFoundException):
+    message = ("DHCP server in %(subnet_id)s subnet could not be found")
+
+class PatameterNotFoundException(NotFoundException):
+    message = ("Parameter for %(mac)s in %(subnet_id)s not found")

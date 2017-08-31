@@ -21,6 +21,6 @@ Base = declarative_base()
 class Datapath(Base):
     __tablename__ = 'datapath'
 
-    id = sa.Column(sa.String(64), primary_key=True)
-    host = sa.Column(sa.String(64), nullable=False)
+    id = sa.Column(sa.String(36), primary_key=True)
+    host = sa.Column(sa.String(255), nullable=False)
     port = sa.Column(sa.Integer, nullable=False)
