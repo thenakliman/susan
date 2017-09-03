@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from sqlalchemy import exc
+
 from susan.db import port as port_db
 from susan.db.rdbms.models import port as port_model
 from susan.db import rdbms
@@ -27,7 +29,10 @@ class Port(port_db.Port):
         row = port_model.Port(datapath_id=datapath_id, port=port,
                               mac=mac, subnet_id=subnet_id)
         session.add(row)
-        session.flush()
+        try:
+            session.commit()
+        except exc.IntegrityError:
+            pass
 
     @staticmethod
     def update_port(id, host=None, port=None):

@@ -13,6 +13,7 @@
 # under the License.
 
 import logging
+import netaddr
 
 from susan.common import exceptions
 from susan.db.rdbms import dhcp as dhcp_db
@@ -37,7 +38,7 @@ class DHCP(dhcp.DHCPServer):
            call super method.
         """
         LOG.info("Handling dhcp 'discover' from %s datapath on %s port",
-                 datapath.id, in_port)
+                 datapath, in_port)
         return super(DHCP, self).handle_discover(pkt, datapath, in_port)
 
     def handle_request(self, pkt, datapath, in_port):
@@ -48,24 +49,51 @@ class DHCP(dhcp.DHCPServer):
            call super method.
         """
         LOG.info("Handling dhcp 'Request' from %s datapath on %s port",
-                 datapath.id, in_port)
+                 datapath, in_port)
         return super(DHCP, self).handle_request(pkt, datapath, in_port)
 
     def get_available_ip(self, datapath, interface):
         """Gets the free available IP"""
+        try:
+            subnet_id = self.db.get_subnet_id(datapath=datapath,
+                                              interface=interface)
+        except exceptions.SubnetNotDefinedException:
+            LOG.error("%s port on %s datapath does not belong to any subnet.",
+                      datapath, interface)
+            raise
 
-        ip = '172.30.10.35'
-        LOG.info("Assigning %s ip for %s datapath %s port", ip,
-                  datapath.id, interface)
-        return ip
+        mac = self.db.get_mac_from_port(datapath, interface)
+        reserved_ip = self.db.get_reserved_ip(subnet_id=subnet_id, mac=mac)
+        if reserved_ip:
+            return reserved_ip.ip
+        else:
+            allocated_ips = self.db.get_reserved_ip_in_subnet(subnet_id)
+            ranges = self.db.get_ranges_in_subnet(subnet_id)
+            if not ranges:
+                LOG.error("Ranges for %s subnet is not defined", subnet_id)
+
+            allocated_set = set()
+            for allocated_ip in allocated_ips:
+                allocated_set.add(int(netaddr.IPAddress(allocated_ip)))
+
+            # TODO(thenakliman): Ranges can be merged to process effectlively
+            for start, end in ranges:
+                for ip in range(int(netaddr.IPAddress(start)),
+                                int(netaddr.IPAddress(end))):
+                    if ip not in allocated_set:
+                        return netaddre.IPAddress(ip)
+
+        LOG.error("IP Could not be found in %s subnet", subnet_id)
+        raise exceptions.IPNotAvailableException(subnet_id=subnet_id)
 
     def get_subnet_id(self, datapath, interface):
         try:
             subnet_id = self.db.get_subnet_id(datapath=datapath,
                                               interface=interface)
         except exceptions.SubnetNotDefinedException:
-            LOG.error("%s port on %s datapath does not belong to any subnet.",
-                      datapath.id, interface)
+            LOG.error("%d port on %s datapath does not belong to any subnet.",
+                      datapath, interface)
+            raise
 
         return subnet_id
 
@@ -74,48 +102,48 @@ class DHCP(dhcp.DHCPServer):
         try:
             subnet_id = self.get_subnet_id(datapath, interface)
         except exceptions.SubnetNotDefinedException:
-            LOG.error("%s port on %s datapath does not belong to any subnet.",
-                      interface=interface,
-                      datapath=datapath,
-                      mac=mac)
+            LOG.error("%s interface on %s datapath does not belong to any subnet.",
+                      interface, datapath)
 
-            raise ParameterNotFoundException(datapath_id=datapath.id,
-                                             interface=interface,
-                                             mac=mac)
+            raise exceptions.ParameterNotFoundException(datapath_id=datapath,
+                                                        port=interface,
+                                                        mac=mac)
 
         try:
-            data = self.db.get_parameter(subnet_id, mac)
+            return self.db.get_parameter(subnet_id, mac)
         except exceptions.ParameterNotFoundException:
             LOG.error("Patarameter for %s mac in %s subnet not found", mac, subnet_id)
-
-        return data or dict()
+            return dict()
 
     def get_dhcp_server_info(self, datapath, interface):
         """Returns mac and ip of the dhcp server being used"""
         try:
             subnet_id = self.get_subnet_id(datapath, interface)
+            (dhcp_mac, dhcp_ip) = self.db.get_dhcp_server_info(subnet_id)
         except exceptions.SubnetNotDefinedException:
             LOG.error("%s port on %s datapath does not belong to any subnet.",
-                      datapath_id=datapath.id,
+                      datapath_id=datapath,
                       interface=interface,
                       mac=mac)
 
-            raise ParameterNotFoundException(datapath_id=datapath.id,
-                                             interface=interface,
-                                             mac=mac)
-        (dhcp_mac, dhcp_ip) = self.db.get_dhcp_server_info(subnet_id)
+            raise exceptions.ParameterNotFoundException(
+                datapath_id=datapath,
+                interface=interface,
+                mac=mac)
+
         return (dhcp_mac, dhcp_ip)
 
     def get_next_server_ip(self, datapath, interface):
         "Get next server ip"""
-        # FIXME(thenakliman)
-        return '172.30.10.1'
-        parameters = self.get_parameters(host, datapath, interface)
-        return parameters.get(const.OPTIONS.TFTP_SERVER_NAME)
+        try:
+            return self.db.get_next_server(datapath, interface)
+        except exceptions.NextServerNotDefinedException:
+            LOG.error("Next server is not defined in %s subnet", subnet_id)
+            raise
 
     def get_lease_time(self, datapath, interface, mac):
         """Get lease time for a host"""
         parameter = self.get_parameters(datapath, interface, mac)
-        return ((parameter and parameter.get(const.LEASE_TIME,
-                                            const.DEFAULT_LEASE_TIME)
+        return ((parameter and parameter.get(const.OPTIONS.LEASE_TIME,
+                                             const.DEFAULT_LEASE_TIME)
                ) or const.DEFAULT_LEASE_TIME)

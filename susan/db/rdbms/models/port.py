@@ -13,12 +13,11 @@
 # under the License.
 
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from susan.db.rdbms import models
 
 
-class Port(Base):
+class Port(models.Base):
     __tablename__ = 'port'
 
     datapath_id = sa.Column(sa.String(36), sa.ForeignKey('datapath.id',

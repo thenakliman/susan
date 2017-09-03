@@ -17,7 +17,6 @@ from abc import abstractmethod
 
 import six
 
-
 @six.add_metaclass(ABCMeta)
 class DHCPdb(object):
     def __init__(self):

@@ -13,6 +13,7 @@
 # under the License.
 
 """Handles all the apps being used, their registration etc."""
+import logging
 
 
 from ryu.base import app_manager
@@ -28,6 +29,8 @@ from susan.common import constants
 from susan.common import packet as packet_util
 
 
+LOG = logging.getLogger(__name__)
+
 class AppManager(app_manager.RyuApp):
     """Takes care of all the applications and management of them."""
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -41,6 +44,7 @@ class AppManager(app_manager.RyuApp):
         (host, port) = dp.address
         if dp.id not in self.datapaths:
             datapath.Datapath().add_datapath(dp.id, host, port)
+            self.datapaths.add(dp.id)
 
     # pylint: disable=no-member,no-self-use,locally-disabled
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
@@ -77,9 +81,13 @@ class AppManager(app_manager.RyuApp):
 
             break
 
-    # pylint: disable=no-member
     @set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, event):
         """Called on packet arrival and calls the correct apps."""
         pkt = packet.Packet(event.msg.data)
-        self.classifier(pkt, event.msg.datapath, event.msg.match['in_port'])
+        try:
+            self.classifier(pkt, event.msg.datapath, event.msg.match['in_port'])
+        except Exception:
+            # Keep working normally if a packet processing fails, to process
+            # next packets.
+            LOG.error("Failure in processing packet", exc_info=True)

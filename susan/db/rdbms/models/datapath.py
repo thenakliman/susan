@@ -13,12 +13,10 @@
 # under the License.
 
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from susan.db.rdbms import models
 
-
-class Datapath(Base):
+class Datapath(models.Base):
     __tablename__ = 'datapath'
 
     id = sa.Column(sa.String(36), primary_key=True)

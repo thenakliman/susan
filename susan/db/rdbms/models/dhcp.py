@@ -13,19 +13,19 @@
 # under the License.
 
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import orm
 
-Base = declarative_base()
+from susan.db.rdbms import models
 
 
-class Subnet(Base):
+class Subnet(models.Base):
     __tablename__ = 'subnet'
 
     id = sa.Column(sa.String(36), primary_key=True)
     network = sa.Column(sa.String(64), nullable=False)
     cidr = sa.Column(sa.Integer, nullable=False)
     gateway = sa.Column(sa.String(64), nullable=False)
+    next_server = sa.Column(sa.String(64), nullable=False)
     # Currently only dhcp server per subnet is supported.
     # A subnet may not be have dhcp server therefore nullable is True.
     # It can create circular depencency if nullable is False is used.
@@ -36,18 +36,17 @@ class Subnet(Base):
     ip_range = orm.relationship("IPRange")
 
 
-class IPRange(Base):
+class IPRange(models.Base):
     __tablename__ = 'ip_range'
 
-    id = sa.Column(sa.String(36), primary_key=True)
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
                                                        ondelete='CASCADE'),
-                          nullable=False)
-    start_ip = sa.Column(sa.String(64), nullable=False)
-    end_ip = sa.Column(sa.String(64), nullable=False)
+                          nullable=False, primary_key=True)
+    start_ip = sa.Column(sa.String(64), nullable=False, primary_key=True)
+    end_ip = sa.Column(sa.String(64), nullable=False, primary_key=True)
 
 
-class Parameter(Base):
+class Parameter(models.Base):
     __tablename__ = 'parameter'
 
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
@@ -63,7 +62,7 @@ class Parameter(Base):
     data = sa.Column(sa.PickleType, nullable=True)
 
 
-class ReservedIP(Base):
+class ReservedIP(models.Base):
     __tablename__ = 'reserved_ip'
 
     ip = sa.Column(sa.String(64), nullable=False)

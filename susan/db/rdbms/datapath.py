@@ -29,7 +29,7 @@ class Datapath(datapath_db.Datapath):
         row = dp_model.Datapath(id=id_, host=host, port=port)
         session.add(row)
         try:
-            session.flush()
+            session.commit()
         except  exc.IntegrityError:
             pass
 

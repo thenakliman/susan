@@ -17,17 +17,33 @@ class DHCPKV(object):
     def __init__(self):
         pass
 
+    def __init__(self, *args, **kwargs):
+        super(DHCPDB, self).__init__(*args, **kwargs)
+        pass
+
     def release_ip(self, ip, subnet_id, mac):
         pass
 
-    def get_ip(self, subnet_id, mac):
+    def get_ip(self, datapath, in_port):
         pass
 
     def commit_ip(self, subnet_id, mac, ip):
         pass
 
-    def get_parameters(subnet_id, mac=None):
+    def reserve_ip(self, ip, subnet_id, mac):
         pass
 
-    def reserve_ip(self, ip, subnet_id, mac):
+    def get_dhcp_server_ip(self, subnet_id):
+        pass
+
+    def get_mac(self, subnet_id, ip):
+        pass
+
+    def get_dhcp_server_info(self, subnet_id):
+        pass
+
+    def get_subnet_id(self, datapath, interface):
+        pass
+
+    def get_parameter(self, subnet_id, mac):
         pass

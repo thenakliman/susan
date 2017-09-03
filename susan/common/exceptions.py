@@ -12,9 +12,44 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
+
+LOG = logging.getLogger(__name__)
+
 
 class SusanException(Exception):
-    pass
+    """Base Susan Exception
+
+    To correctly use this class, inherit from it and define
+    a 'message' property. That message will get printf'd
+    with the keyword arguments provided to the constructor.
+    """
+    message = ("An unknown exception occurred.")
+
+    def __init__(self, message=None, **kwargs):
+        self.kwargs = kwargs
+
+        if message:
+            self.message = message
+
+        try:
+            self.message = self.message % kwargs
+        except Exception:
+            # kwargs doesn't match a variable in the message
+            # log the issue and the kwargs
+            LOG.exception('Exception in string format operation, '
+                          'kwargs: %s', kwargs)
+
+        super(SusanException, self).__init__(self.message)
+
+    def __str__(self):
+        if six.PY3:
+            return self.message
+        return self.message.encode('utf-8')
+
+    def __unicode__(self):
+        return self.message
 
 
 class NotFoundException(SusanException):
@@ -26,7 +61,7 @@ class ConflictException(SusanException):
 
 
 class SubnetNotFoundException(NotFoundException):
-    message = ("Subnet id of %(interface)s on %(datapath_id) "
+    message = ("Subnet id of %(interface)s on %(datapath_id)s "
                "could not be found")
 
 class SubnetNotDefinedException(NotFoundException):
@@ -34,11 +69,11 @@ class SubnetNotDefinedException(NotFoundException):
 
 
 class DHCPServerNotFoundException(NotFoundException):
-    message = ("DHCP server for %(subnet_id) subnet not found")
+    message = ("DHCP server for %(subnet_id)s subnet not found")
 
 
 class ParameterNotFoundException(NotFoundException):
-    message = ("Parameter for %(mac)s on %(port)s port of  %(datapath_id)s not found")
+    message = ("Parameter for %(mac)s on %(port)s port of %(datapath_id)s not found")
 
 
 class AlreadyAssignedDiffIPException(ConflictException):
@@ -56,5 +91,22 @@ class MACNotFound(NotFoundException):
 class DHCPNotFound(NotFoundException):
     message = ("DHCP server in %(subnet_id)s subnet could not be found")
 
+
 class PatameterNotFoundException(NotFoundException):
     message = ("Parameter for %(mac)s in %(subnet_id)s not found")
+
+
+class NextServerNotDefinedException(NotFoundException):
+    message = ("Next server could not be found for %(subnet_id) subnet")
+
+
+class NotAvailableException(SusanException):
+    message = ("Resource is not available")
+
+
+class IPNotAvailableException(NotAvailableException):
+    message = ("IPs are not available in %(subnet_id) subnet")
+
+
+class PortDoesNotFoundException(NotFoundException):
+    message = ("Port %(port)s in %(datapath_id)s datapath does not exist")

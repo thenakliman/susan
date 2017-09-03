@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import abc
+
 import netaddr
 
 
@@ -27,3 +29,11 @@ def make_type(name, base, **attributes):
 
 def make_enum(**attributes):
     return make_type('Enum', (), **attributes)
+
+# TODO(thenakliman) Make it working, and use at all the required places
+def abstractclass(cls):
+    for method in dir(cls):
+        if callable(getattr(cls, method)) and not method.startswith('__'):
+            setattr(cls, method, abc.abstractmethod(getattr(cls, method)))
+
+    return cls

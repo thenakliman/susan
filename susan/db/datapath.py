@@ -23,7 +23,7 @@ class Datapath(object):
         pass
 
     @abstractmethod
-    def add_datapath(id_, host, port):
+    def add_datapath(id, host, port):
         pass
 
     @abstractmethod
@@ -31,9 +31,9 @@ class Datapath(object):
         pass
 
     @abstractmethod
-    def delete_datapath(id_):
+    def delete_datapath(id):
         pass
 
     @abstractmethod
-    def get_datapath(id_):
+    def get_datapath(id):
         pass

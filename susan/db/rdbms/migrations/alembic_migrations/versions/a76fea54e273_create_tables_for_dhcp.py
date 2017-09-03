@@ -24,6 +24,7 @@ def upgrade():
         sa.Column('network', sa.String(64), nullable=False),
         sa.Column('cidr', sa.Integer, nullable=False),
         sa.Column('gateway', sa.String(64), nullable=False),
+        sa.Column('next_server', sa.String(64), nullable=False),
         sa.Column('server', sa.String(64), sa.ForeignKey('reserved_ip.ip',
                                                          ondelete='CASCADE'),
                   nullable=True))
@@ -49,9 +50,9 @@ def upgrade():
     op.create_table(
         'reserved_ip',
         sa.Column('ip', sa.String(64), nullable=False),
-        sa.Column('mac', sa.String(32), nullable=False,
+        sa.Column('mac', sa.String(32),
                   sa.ForeignKey('subnet.id', ondelete='CASCADE'),
-                  primary_key=True),
+                  primary_key=True, nullable=False),
         sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
                                                             ondelete='CASCADE'),
                   nullable=False, primary_key=True),
