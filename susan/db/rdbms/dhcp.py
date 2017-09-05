@@ -85,6 +85,7 @@ class Range(dhcp_db.DHCPdb):
         return session.query(d_model.IPRange).filter_by(
             subnet_id=subnet_id).all()
 
+
 class ReservedIP(dhcp_db.DHCPdb):
     def __init__(self, *args, **Kwargs):
         super(ReservedIP, self).__init__()
@@ -167,9 +168,6 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
 
     def release_ip(self, ip, subnet_id, mac):
         self.delete_reserved_ip(subnet_id, mac)
-
-    def get_ip(self, datapath, in_port):
-        return '172.30.10.35'
 
     def commit_ip(self, subnet_id, mac, ip):
         session = rdbms.get_session()
