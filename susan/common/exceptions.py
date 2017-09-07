@@ -61,7 +61,7 @@ class ConflictException(SusanException):
 
 
 class SubnetNotFoundException(NotFoundException):
-    message = ("Subnet id of %(interface)s on %(datapath_id)s "
+    message = ("Subnet id of %(port)s on %(datapath_id)s "
                "could not be found")
 
 

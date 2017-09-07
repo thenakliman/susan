@@ -57,7 +57,7 @@ class DHCPdb(object):
 
     @abstractmethod
     def add_reserved_ip(self, ip, mac, subnet_id, state,
-                        interface, is_reserved=True, lease_time=None,
+                        port, is_reserved=True, lease_time=None,
                         renew_time=None, expire_time=None):
         pass
 
@@ -71,7 +71,7 @@ class DHCPdb(object):
 
     @abstractmethod
     def update_reserved_ip(self, mac, subnet_id, ip=None,
-                           interface=None, is_reserved=True, lease_time=None,
+                           port=None, is_reserved=True, lease_time=None,
                            renew_time=None, expire_time=None):
         pass
 

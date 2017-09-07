@@ -42,7 +42,7 @@ class DHCPKV(object):
     def get_dhcp_server_info(self, subnet_id):
         pass
 
-    def get_subnet_id(self, datapath, interface):
+    def get_subnet_id(self, datapath, port):
         pass
 
     def get_parameter(self, subnet_id, mac):

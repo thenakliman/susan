@@ -204,18 +204,18 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
 
         return (dhcp_server_mac, dhcp_server_ip)
 
-    def get_subnet_id(self, datapath, interface, session=None):
+    def get_subnet_id(self, datapath, port, session=None):
         if session is None:
             session = rdbms.get_session()
 
         row = self.get_port(session=session, datapath_id=datapath,
-                            port=interface)
+                            port=port)
         try:
             return row.subnet_id
         except AttributeError:
             raise exceptions.SubnetNotDefinedException(
                 datapath_id=datapath,
-                interface=interface)
+                port=port)
 
     def get_parameter(self, subnet_id, mac=None):
         session = rdbms.get_session()
@@ -233,7 +233,7 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
         session = rdbms.get_session()
         with session.begin():
             subnet_id = self.get_subnet_id(session=session, datapath=datapath,
-                                           interface=port)
+                                           port=port)
             subnet = self.get_subnet(session, subnet_id)
         try:
             return subnet.next_server
