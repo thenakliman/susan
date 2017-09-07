@@ -31,6 +31,7 @@ from susan.common import packet as packet_util
 
 LOG = logging.getLogger(__name__)
 
+
 class AppManager(app_manager.RyuApp):
     """Takes care of all the applications and management of them."""
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -46,7 +47,6 @@ class AppManager(app_manager.RyuApp):
             datapath.Datapath().add_datapath(dp.id, host, port)
             self.datapaths.add(dp.id)
 
-    # pylint: disable=no-member,no-self-use,locally-disabled
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, event):
         """Called when feature negotiation takes place. and adds necessary
@@ -86,7 +86,8 @@ class AppManager(app_manager.RyuApp):
         """Called on packet arrival and calls the correct apps."""
         pkt = packet.Packet(event.msg.data)
         try:
-            self.classifier(pkt, event.msg.datapath, event.msg.match['in_port'])
+            self.classifier(pkt, event.msg.datapath,
+                            event.msg.match['in_port'])
         except Exception:
             # Keep working normally if a packet processing fails, to process
             # next packets.

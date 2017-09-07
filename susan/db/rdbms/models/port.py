@@ -23,7 +23,7 @@ class Port(models.Base):
     datapath_id = sa.Column(sa.String(36), sa.ForeignKey('datapath.id',
                                                          ondelete='CASCADE'),
                             primary_key=True)
-    mac = sa.Column(sa.String(32), nullable=False)
+    mac = sa.Column(sa.String(32), nullable=True)
     port = sa.Column(sa.String(10), nullable=False, primary_key=True)
     subnet_id = sa.Column(sa.String(36), sa.ForeignKey('subnet.id',
                                                        ondelete='CASCADE'),

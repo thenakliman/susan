@@ -38,7 +38,7 @@ class DHCP(dhcp.DHCPServer):
            call super method.
         """
         LOG.info("Handling dhcp 'discover' from %s datapath on %s port",
-                 datapath, in_port)
+                 datapath.id, in_port)
         return super(DHCP, self).handle_discover(pkt, datapath, in_port)
 
     def handle_request(self, pkt, datapath, in_port):
@@ -49,28 +49,54 @@ class DHCP(dhcp.DHCPServer):
            call super method.
         """
         LOG.info("Handling dhcp 'Request' from %s datapath on %s port",
-                 datapath, in_port)
+                 datapath.id, in_port)
         return super(DHCP, self).handle_request(pkt, datapath, in_port)
 
-    def get_available_ip(self, datapath, interface):
-        """Gets the free available IP"""
+    def get_subnet_mac(self, datapath, port):
         try:
             subnet_id = self.db.get_subnet_id(datapath=datapath,
-                                              interface=interface)
+                                              interface=port)
         except exceptions.SubnetNotDefinedException:
             LOG.error("%s port on %s datapath does not belong to any subnet.",
-                      datapath, interface)
+                      port, datapath)
             raise
 
-        mac = self.db.get_mac_from_port(datapath, interface)
-        reserved_ip = self.db.get_reserved_ip(subnet_id=subnet_id, mac=mac)
+        return subnet_id, self.db.get_mac_from_port(datapath, port)
+
+    def get_ip(self, datapath, port, mac):
+        subnet_id = self.get_subnet_id(datapath, port)
+        return self.db.get_reserve_ip(subnet_id=subnet_id, mac=mac)
+
+    def reserve_ip(self, datapath_id, in_port, ip):
+        subnet_id, mac = self.get_subnet_mac(datapath_id, in_port)
+        self.db.reserve_ip(ip=ip, subnet_id=subnet_id, mac=mac)
+        LOG.info("Reserving  %s ip for %s mac in %s subnet",
+                 ip, subnet_id, mac)
+
+    def get_committed_ip(self, datapath, port, mac):
+        try:
+            return self.get_ip(datapath, port, mac)
+        except exceptions.CommittedIPNotFoundException:
+            LOG.error("IP for %s port on %s datapath not found",
+                      port, datapath)
+            raise
+
+    def get_available_ip(self, datapath, interface, mac):
+        """Gets the free available IP"""
+        try:
+            reserved_ip = self.get_ip(datapath, interface, mac)
+        except exceptions.CommittedIPNotFoundException:
+            reserved_ip = None
+
         if reserved_ip:
-            return reserved_ip.ip
+            return reserved_ip
         else:
+            subnet_id = self.get_subnet_id(datapath, interface)
             allocated_ips = self.db.get_reserved_ip_in_subnet(subnet_id)
             ranges = self.db.get_ranges_in_subnet(subnet_id)
             if not ranges:
                 LOG.error("Ranges for %s subnet is not defined", subnet_id)
+                raise exceptions.RangeNotFoundException(subnet_id=subnet_id)
 
             allocated_set = set()
             for allocated_ip in allocated_ips:
@@ -81,7 +107,7 @@ class DHCP(dhcp.DHCPServer):
                 for ip in range(int(netaddr.IPAddress(start)),
                                 int(netaddr.IPAddress(end))):
                     if ip not in allocated_set:
-                        return netaddre.IPAddress(ip)
+                        return str(netaddr.IPAddress(ip))
 
         LOG.error("IP Could not be found in %s subnet", subnet_id)
         raise exceptions.IPNotAvailableException(subnet_id=subnet_id)
@@ -102,8 +128,8 @@ class DHCP(dhcp.DHCPServer):
         try:
             subnet_id = self.get_subnet_id(datapath, interface)
         except exceptions.SubnetNotDefinedException:
-            LOG.error("%s interface on %s datapath does not belong to any subnet.",
-                      interface, datapath)
+            LOG.error("%s interface on %s datapath does not belong to any "
+                      "subnet.", interface, datapath)
 
             raise exceptions.ParameterNotFoundException(datapath_id=datapath,
                                                         port=interface,
@@ -112,7 +138,8 @@ class DHCP(dhcp.DHCPServer):
         try:
             return self.db.get_parameter(subnet_id, mac)
         except exceptions.ParameterNotFoundException:
-            LOG.error("Patarameter for %s mac in %s subnet not found", mac, subnet_id)
+            LOG.error("Patarameter for %s mac in %s subnet not found",
+                      mac, subnet_id)
             return dict()
 
     def get_dhcp_server_info(self, datapath, interface):
@@ -146,4 +173,10 @@ class DHCP(dhcp.DHCPServer):
         parameter = self.get_parameters(datapath, interface, mac)
         return ((parameter and parameter.get(const.OPTIONS.LEASE_TIME,
                                              const.DEFAULT_LEASE_TIME)
-               ) or const.DEFAULT_LEASE_TIME)
+                 ) or const.DEFAULT_LEASE_TIME)
+
+    def commit_ip(self, datapath_id, in_port, mac, ip):
+        subnet_id = self.get_subnet_id(datapath=datapath_id,
+                                       interface=in_port)
+        self.db.commit_ip(subnet_id=subnet_id, mac=mac, ip=ip)
+        LOG.info("Committed %s ip for %s mac in %s subnet", ip, mac, subnet_id)

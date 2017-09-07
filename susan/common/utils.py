@@ -30,6 +30,7 @@ def make_type(name, base, **attributes):
 def make_enum(**attributes):
     return make_type('Enum', (), **attributes)
 
+
 # TODO(thenakliman) Make it working, and use at all the required places
 def abstractclass(cls):
     for method in dir(cls):

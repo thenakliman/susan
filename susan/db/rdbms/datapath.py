@@ -24,25 +24,18 @@ class Datapath(datapath_db.Datapath):
         super(Datapath, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def add_datapath(id_, host, port):
-        session = rdbms.get_session()
+    def add_datapath(session, id_, host, port):
         row = dp_model.Datapath(id=id_, host=host, port=port)
         session.add(row)
-        try:
-            session.commit()
-        except  exc.IntegrityError:
-            pass
 
     @staticmethod
-    def update_datapath(id, host=None, port=None):
+    def update_datapath(session, id, host=None, port=None):
         pass
 
     @staticmethod
-    def delete_datapath(id_):
-        session = rdbms.get_session()
+    def delete_datapath(session, id_):
         session.query(dp_model.Datapath).filter_by(id=id_).delete()
 
     @staticmethod
-    def get_datapath(id_):
-        session = rdbms.get_session()
+    def get_datapath(session, id_):
         return session.query(dp_model.Datapath).filter_by(id=id_).one_or_none()

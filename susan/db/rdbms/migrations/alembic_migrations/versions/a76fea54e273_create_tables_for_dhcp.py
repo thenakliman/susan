@@ -31,17 +31,17 @@ def upgrade():
 
     op.create_table(
         'ip_range',
-        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
-                                                            ondelete='CASCADE'),
-                  nullable=False, primary_key=True),
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey(
+                      'subnet.id', ondelete='CASCADE'), nullable=False,
+                  primary_key=True),
         sa.Column('start_ip', sa.String(64), nullable=False, primary_key=True),
         sa.Column('end_ip', sa.String(64), nullable=False, primary_key=True))
 
     op.create_table(
         'parameter',
-        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
-                                                            ondelete='CASCADE'),
-                  nullable=False, primary_key=True),
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey(
+                      'subnet.id', ondelete='CASCADE'), nullable=False,
+                  primary_key=True),
         sa.Column('mac', sa.String(36), sa.ForeignKey('port.mac',
                                                       ondelete='CASCADE'),
                   nullable=True, primary_key=True),
@@ -53,9 +53,9 @@ def upgrade():
         sa.Column('mac', sa.String(32),
                   sa.ForeignKey('subnet.id', ondelete='CASCADE'),
                   primary_key=True, nullable=False),
-        sa.Column('subnet_id', sa.String(36), sa.ForeignKey('subnet.id',
-                                                            ondelete='CASCADE'),
-                  nullable=False, primary_key=True),
+        sa.Column('subnet_id', sa.String(36), sa.ForeignKey(
+                      'subnet.id', ondelete='CASCADE'), nullable=False,
+                  primary_key=True),
         sa.Column('is_reserved', sa.Boolean(), nullable=False,
                   server_default=sa.sql.false()),
         sa.Column('lease_time', sa.TIMESTAMP, nullable=True),

@@ -24,29 +24,22 @@ class Port(port_db.Port):
         super(Port, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def add_port(datapath_id, port, mac, subnet_id):
-        session = rdbms.get_session()
+    def add_port(session, datapath_id, port, mac, subnet_id):
         row = port_model.Port(datapath_id=datapath_id, port=port,
                               mac=mac, subnet_id=subnet_id)
         session.add(row)
-        try:
-            session.commit()
-        except exc.IntegrityError:
-            pass
 
     @staticmethod
     def update_port(id, host=None, port=None):
         pass
 
     @staticmethod
-    def delete_port(datapath_id, subnet_id):
-        session = rdbms.get_session()
+    def delete_port(session, datapath_id, subnet_id):
         session.query(port_model.Port).filter_by(datapath_id=datapath_id,
                                                  subnet_id=subnet_id).delete()
 
     @staticmethod
-    def get_port(datapath_id, port):
-        session = rdbms.get_session()
+    def get_port(session, datapath_id, port):
         return session.query(port_model.Port).filter_by(
             datapath_id=datapath_id,
             port=port).one_or_none()

@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from susan.db import rdbms
 from susan.db.rdbms import datapath as datapath_db
 
 
@@ -21,14 +22,17 @@ class Datapath(object):
         self.db = datapath_db.Datapath()
 
     def get_datapath(self, id_):
-        return self.db.get_datapath(id_)
+        session = rdbms.get_session()
+        return self.db.get_datapath(session, id_)
 
     def add_datapath(self, id_, host, port):
-        self.db.add_datapath(id_, host, port)
+        session = rdbms.get_session()
+        self.db.add_datapath(session, id_, host, port)
 
     # May be this method is not required
-    def delete_datapath(self, id_): 
+    def delete_datapath(self, id_):
         pass
 
-    def update_datapath(self, id_, host=None, port=None): 
-        self.db.update_datapath(id_, host, port)
+    def update_datapath(self, id_, host=None, port=None):
+        session = rdbms.get_session()
+        self.db.update_datapath(session, id_, host, port)

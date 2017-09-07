@@ -28,30 +28,28 @@ class Subnet(dhcp_db.DHCPdb):
         super(Subnet, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def create_subnet(network, cidr, gateway=None, server=None, next_server=None):
-        session = rdbms.get_session()
+    def create_subnet(session, network, cidr, gateway=None,
+                      server=None, next_server=None):
+
         id_ = str(uuid.uuid1())
         row = d_model.Subnet(id=id_, network=network,
                              cidr=cidr, gateway=gateway, server=server,
                              next_server=next_server)
-        session.add(row)
         # TODO(thenakliman) it is never going to raise integrity excepion
         # due to conflicting is because id is being generated unique each time
         # this method is called.
-        session.commit()
+        session.add(row)
 
     def update_subnet(self, id_, network=None,
                       cidr=None, gateway=None, server=None):
         pass
 
     @staticmethod
-    def delete_subnet(self, id_):
-        session = rdbms.get_session()
+    def delete_subnet(session, id_):
         session.query(d_model.Subnet).filter_by(id=id_).delete()
 
     @staticmethod
-    def get_subnet(id_):
-        session = rdbms.get_session()
+    def get_subnet(session, id_):
         return session.query(d_model.Subnet).filter_by(id=id_).one_or_none()
 
 
@@ -59,29 +57,24 @@ class Range(dhcp_db.DHCPdb):
     def __init__(self, *args, **kwargs):
         super(Range, self).__init__(*args, **kwargs)
 
-    def create_range(self, subnet_id, start_ip, end_ip):
+    @staticmethod
+    def create_range(session, subnet_id, start_ip, end_ip):
         session = rdbms.get_session()
         row = d_model.IPRange(subnet_id=subnet_id, start_ip=start_ip,
                               end_ip=end_ip)
         session.add(row)
-        try:
-            session.commit()
-        except exc.IntegrityError:
-            pass
 
     def update_range(self, subnet_id, start_ip=None, end_ip=None):
         pass
 
     @staticmethod
-    def delete_range(subnet_id, start_ip, end_ip):
-        session = rdbms.get_session()
+    def delete_range(session, subnet_id, start_ip, end_ip):
         session.query(d_model.IPRange).filter_by(subnet_id=subnet_id,
                                                  start_ip=start_ip,
                                                  end_ip=end_ip).delete()
 
     @staticmethod
-    def get_range(subnet_id):
-        session = rdbms.get_session()
+    def get_range(session, subnet_id):
         return session.query(d_model.IPRange).filter_by(
             subnet_id=subnet_id).all()
 
@@ -91,26 +84,20 @@ class ReservedIP(dhcp_db.DHCPdb):
         super(ReservedIP, self).__init__()
 
     @staticmethod
-    def delete_reserved_ip(mac, subnet_id):
-        session = rdbms.get_session()
+    def delete_reserved_ip(session, mac, subnet_id):
         session.query(d_model.ReservedIP).filter_by(
             mac=mac,
             subnet_id=subnet_id).delete()
 
     @staticmethod
-    def add_reserved_ip(ip, mac, subnet_id, is_reserved=True,
+    def add_reserved_ip(session, ip, mac, subnet_id, is_reserved=True,
                         lease_time=None, renew_time=None, expiry_time=None):
-        session = rdbms.get_session()
         row = d_model.ReservedIP(ip=ip, mac=mac, subnet_id=subnet_id,
                                  is_reserved=is_reserved,
                                  lease_time=lease_time,
                                  expiry_time=expiry_time)
 
         session.add(row)
-        try:
-            session.commit()
-        except exc.IntegrityError:
-            pass
 
     def update_reserved_ip(self, mac, subnet_id, ip=None,
                            is_reserved=True, lease_time=None,
@@ -118,14 +105,12 @@ class ReservedIP(dhcp_db.DHCPdb):
         pass
 
     @staticmethod
-    def get_reserved_ip(mac, subnet_id):
-        session = rdbms.get_session()
+    def get_reserved_ip(session, mac, subnet_id):
         return session.query(d_model.ReservedIP).filter_by(
             mac=mac, subnet_id=subnet_id).one_or_none()
 
     @staticmethod
-    def get_reserved_ip_of_subnet(subnet_id):
-        session = rdbms.get_session()
+    def get_reserved_ip_of_subnet(session, subnet_id):
         return session.query(d_model.ReservedIP).filter_by(
             subnet_id=subnet_id).all()
 
@@ -135,18 +120,12 @@ class Parameter(dhcp_db.DHCPdb):
         super(Parameter, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def add_parameter(subnet_id, mac=None, data=None):
-        session = rdbms.get_session()
+    def add_parameter(session, subnet_id, mac=None, data=None):
         row = d_model.Parameter(subnet_id=subnet_id, mac=mac, data=data)
         session.add(row)
-        try:
-            session.commit()
-        except exc.IntegrityError:
-            pass
 
     @staticmethod
-    def delete_parameter(subnet_id, mac):
-        session = rdbms.get_session()
+    def delete_parameter(session, subnet_id, mac):
         session.query(d_model.Parameter).filter_by(subnet_id=subnet_id,
                                                    mac=mac).delete()
 
@@ -154,8 +133,7 @@ class Parameter(dhcp_db.DHCPdb):
         pass
 
     @staticmethod
-    def get_parameter(subnet_id, mac=None):
-        session = rdbms.get_session()
+    def get_parameters(session, subnet_id, mac=None):
         return session.query(d_model.Parameter).filter_by(
             subnet_id=subnet_id, mac=mac).one_or_none()
 
@@ -167,38 +145,46 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
         super(DHCPDB, self).__init__(*args, **kwargs)
 
     def release_ip(self, ip, subnet_id, mac):
-        self.delete_reserved_ip(subnet_id, mac)
+        session = rdbms.get_session()
+        self.delete_reserved_ip(session, subnet_id, mac)
+        session.commit()
 
     def commit_ip(self, subnet_id, mac, ip):
         session = rdbms.get_session()
-        row = self.get_reserved_ip(mac=mac, subnet_id=subnet_id)
-        if row is None:
-            self.add_reserved_ip(subnet_id=subnet_id, ip=ip, mac=mac)
-        elif row.ip != ip:
-            raise exceptions.AlreadyAssignedDiffIPException(subnet_id=subnet_id,
-                                                            mac=mac, ip=ip)
-        elif row.lease_time is not None:
-            raise exceptions.AlreadyAssignedIPException(subnet_id=subnet_id,
-                                                        mac=mac, ip=ip)
+        with session.begin():
+            row = self.get_reserved_ip(session=session, mac=mac,
+                                       subnet_id=subnet_id)
+            if row is None:
+                self.add_reserved_ip(session, subnet_id=subnet_id,
+                                     ip=ip, mac=mac)
+            elif row.ip != ip:
+                raise exceptions.AlreadyAssignedDiffIPException(
+                    subnet_id=subnet_id, mac=mac, ip=ip)
+            elif row.lease_time is not None:
+                raise exceptions.AlreadyAssignedIPException(
+                    subnet_id=subnet_id, mac=mac, ip=ip)
 
     def reserve_ip(self, ip, subnet_id, mac):
-        row = self.get_reserved_ip(mac=mac, subnet_id=subnet_id)
-        if row is None:
-            self.add_reserve_ip(ip=ip, subnet_id=subnet_id, mac=mac)
-        elif row.ip != ip:
-            raise exceptions.AlreadyAssignedDiffIPException(subnet_id=subnet_id,
-                                                            mac=mac, ip=ip)
+        session = rdbms.get_session()
+        with session.begin():
+            row = self.get_reserved_ip(session=session, mac=mac,
+                                       subnet_id=subnet_id)
+            if row is None:
+                self.add_reserved_ip(session=session, ip=ip,
+                                     subnet_id=subnet_id, mac=mac)
+            elif row.ip != ip:
+                raise exceptions.AlreadyAssignedDiffIPException(
+                    subnet_id=subnet_id, mac=mac, ip=ip)
 
-    def get_dhcp_server_ip(self, subnet_id):
-        row = self.get_subnet(subnet_id)
+    def get_dhcp_server_ip(self, session, subnet_id):
+        row = self.get_subnet(session, subnet_id)
         try:
             return row.server
         except AttributeError:
             raise exceptions.SubnetNotFoundExceptions(subnet_id=subnet_id)
 
-
-    def get_mac(self, subnet_id, ip):
-        session = rdbms.get_session()
+    # TODO(thenakliman): Don't fire the command directly, call subper class
+    def get_mac(self, session, subnet_id, ip):
         row = session.query(d_model.ReservedIP).filter_by(
             ip=ip, subnet_id=subnet_id).one_or_none()
 
@@ -208,15 +194,22 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
             raise exceptions.MACNotFound(ip=ip, subnet_id=subnet_id)
 
     def get_dhcp_server_info(self, subnet_id):
-        dhcp_server_ip = self.get_dhcp_server_ip(subnet_id)
-        if dhcp_server_ip is None:
-            raise exceptions.DHCPNotFound(subnet_id)
+        session = rdbms.get_session()
+        with session.begin():
+            dhcp_server_ip = self.get_dhcp_server_ip(session, subnet_id)
+            if dhcp_server_ip is None:
+                raise exceptions.DHCPNotFound(subnet_id)
 
-        dhcp_server_mac = self.get_mac(subnet_id, dhcp_server_ip)
+            dhcp_server_mac = self.get_mac(session, subnet_id, dhcp_server_ip)
+
         return (dhcp_server_mac, dhcp_server_ip)
 
-    def get_subnet_id(self, datapath, interface):
-        row = self.get_port(datapath_id=datapath, port=interface)
+    def get_subnet_id(self, datapath, interface, session=None):
+        if session is None:
+            session = rdbms.get_session()
+
+        row = self.get_port(session=session, datapath_id=datapath,
+                            port=interface)
         try:
             return row.subnet_id
         except AttributeError:
@@ -224,16 +217,24 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
                 datapath_id=datapath,
                 interface=interface)
 
-    def get_parameter(self, subnet_id, mac):
-        row = super(DHCPDB, self).get_parameter(subnet_id, mac)
+    def get_parameter(self, subnet_id, mac=None):
+        session = rdbms.get_session()
+        with session.begin():
+            row = self.get_parameters(session, subnet_id, mac)
+            if row is None:
+                row = self.get_parameters(session, subnet_id, None)
+
         try:
             return row.data
         except AttributeError:
             raise exceptions.ParameterNotFoundException(subnet_id=subnet_id)
 
     def get_next_server(self, datapath, port):
-        subnet_id = self.get_subnet_id(datapath, port)
-        subnet = self.get_subnet(subnet_id)
+        session = rdbms.get_session()
+        with session.begin():
+            subnet_id = self.get_subnet_id(session=session, datapath=datapath,
+                                           interface=port)
+            subnet = self.get_subnet(session, subnet_id)
         try:
             return subnet.next_server
         except AttributeError:
@@ -241,15 +242,17 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
                 subnet_id=subnet_id)
 
     def get_ranges_in_subnet(self, subnet_id):
-        ranges = self.get_range(subnet_id)
+        session = rdbms.get_session()
+        ranges = self.get_range(session, subnet_id)
         ip_ranges = []
         for ip_range in ranges:
-            ip_ranges.append(ip_range.start_ip, ip_range.end_ip)
+            ip_ranges.append((ip_range.start_ip, ip_range.end_ip))
 
-        return tuple(ip_ranges) 
+        return tuple(ip_ranges)
 
     def get_reserved_ip_in_subnet(self, subnet_id):
-        reserved_ips = self.get_reserved_ip_of_subnet(subnet_id)
+        session = rdbms.get_session()
+        reserved_ips = self.get_reserved_ip_of_subnet(session, subnet_id)
         ips = []
         for ip in reserved_ips:
             ips.append(ip.ip)
@@ -257,9 +260,20 @@ class DHCPDB(Subnet, Range, ReservedIP, Parameter,
         return tuple(ips)
 
     def get_mac_from_port(self, datapath_id, port):
-        port = self.get_port(datapath_id, port)
+        session = rdbms.get_session()
+        port = self.get_port(session, datapath_id, port)
         try:
             return port.mac
         except AttributeError:
             raise exceptions.PortDoesNotExistException(datapath_id=datapath_id,
                                                        port=port)
+
+    def get_reserve_ip(self, mac, subnet_id):
+        session = rdbms.get_session()
+        ip = self.get_reserved_ip(session=session, mac=mac,
+                                  subnet_id=subnet_id)
+        try:
+            return ip.ip
+        except AttributeError:
+            raise exceptions.CommittedIPNotFoundException(mac=mac,
+                                                          subnet_id=subnet_id)

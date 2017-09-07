@@ -16,6 +16,7 @@ import sqlalchemy as sa
 
 from susan.db.rdbms import models
 
+
 class Datapath(models.Base):
     __tablename__ = 'datapath'
 

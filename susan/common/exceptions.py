@@ -64,6 +64,7 @@ class SubnetNotFoundException(NotFoundException):
     message = ("Subnet id of %(interface)s on %(datapath_id)s "
                "could not be found")
 
+
 class SubnetNotDefinedException(NotFoundException):
     message = ("Subnet %(subnet_id)s is not registered")
 
@@ -73,7 +74,8 @@ class DHCPServerNotFoundException(NotFoundException):
 
 
 class ParameterNotFoundException(NotFoundException):
-    message = ("Parameter for %(mac)s on %(port)s port of %(datapath_id)s not found")
+    message = ("Parameter for %(mac)s on %(port)s port of %(datapath_id)s "
+               "not found")
 
 
 class AlreadyAssignedDiffIPException(ConflictException):
@@ -110,3 +112,12 @@ class IPNotAvailableException(NotAvailableException):
 
 class PortDoesNotFoundException(NotFoundException):
     message = ("Port %(port)s in %(datapath_id)s datapath does not exist")
+
+
+class RangeNotFoundException(NotFoundException):
+    message = ("Range not found in %(subnet_id) subnet")
+
+
+class CommittedIPNotFoundException(NotFoundException):
+    message = ("Committed ip for %(mac)s in %(subnet_id)s subnet, "
+               "could not be found")

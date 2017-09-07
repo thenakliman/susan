@@ -25,7 +25,7 @@ def create_engine(connection=None):
         connection = "sqlite:////var/lib/sqlite/susan"
 
     engine = sa.create_engine(connection, echo=True)
-    SQL_SESSION = orm.sessionmaker(bind=engine)
+    SQL_SESSION = orm.sessionmaker(bind=engine, autocommit=True)
 
 
 def get_session():

@@ -17,6 +17,7 @@ from abc import abstractmethod
 
 import six
 
+
 @six.add_metaclass(ABCMeta)
 class DHCPdb(object):
     def __init__(self):
@@ -24,10 +25,6 @@ class DHCPdb(object):
 
     @abstractmethod
     def release_ip(self, ip, subnet_id, mac):
-        pass
-
-    @abstractmethod
-    def get_ip(self, host, dp, interface):
         pass
 
     @abstractmethod

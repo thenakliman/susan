@@ -17,6 +17,7 @@ from abc import abstractmethod
 
 import six
 
+
 @six.add_metaclass(ABCMeta)
 class Datapath(object):
     def __init__(self, *args, **kwargs):
