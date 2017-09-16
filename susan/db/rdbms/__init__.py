@@ -12,17 +12,29 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import importlib
+
 from sqlalchemy import orm
 import sqlalchemy as sa
+
+from susan import CONF
 
 SQL_SESSION = None
 
 
+DRIVER_BASE = 'susan.db'
+
+
+# TODO(thenakliman): Only connection is being established. There are no
+# configuration's done except default. Features specific to database should
+# be supported to utilize database capability effectively.
 def create_engine(connection=None):
     global SQL_SESSION
 
+    driver_name = CONF.get('default', 'database')
     if connection is None:
-        connection = "sqlite:////var/lib/sqlite/susan"
+        driver = importlib("%s.%s", DRIVER_BASE, driver_name)
+        connection = driver.get_connection_string()
 
     engine = sa.create_engine(connection, echo=True)
     SQL_SESSION = orm.sessionmaker(bind=engine, autocommit=True)
