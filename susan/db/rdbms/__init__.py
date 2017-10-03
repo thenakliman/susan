@@ -12,29 +12,24 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc
+from sqlalchemy import orm
+import sqlalchemy as sa
 
-import netaddr
-
-
-def get_packed_address(address):
-    """Returns packet ip address."""
-
-    return netaddr.IPAddress(address).packed
+SQL_SESSION = None
 
 
-def make_type(name, base, **attributes):
-    return type(name, base, attributes)
+def create_engine(connection=None):
+    global SQL_SESSION
+
+    if connection is None:
+        connection = "sqlite:////var/lib/sqlite/susan"
+
+    engine = sa.create_engine(connection, echo=True)
+    SQL_SESSION = orm.sessionmaker(bind=engine, autocommit=True)
 
 
-def make_enum(**attributes):
-    return make_type('Enum', (), **attributes)
+def get_session():
+    if SQL_SESSION is None:
+        create_engine()
 
-
-# TODO(thenakliman) Make it working, and use at all the required places
-def abstractclass(cls):
-    for method in dir(cls):
-        if callable(getattr(cls, method)) and not method.startswith('__'):
-            setattr(cls, method, abc.abstractmethod(getattr(cls, method)))
-
-    return cls
+    return SQL_SESSION()

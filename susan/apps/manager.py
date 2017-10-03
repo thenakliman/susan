@@ -11,7 +11,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 """Handles all the apps being used, their registration etc."""
+import logging
+
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller import handler
@@ -19,9 +23,13 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3
 
-from susan.apps.dhcp import dhcp
+from susan.apps import dhcp
+from susan.apps import datapath
 from susan.common import constants
 from susan.common import packet as packet_util
+
+
+LOG = logging.getLogger(__name__)
 
 
 class AppManager(app_manager.RyuApp):
@@ -30,9 +38,15 @@ class AppManager(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(AppManager, self).__init__(*args, **kwargs)
+        self.datapaths = set()
         self.apps = []
 
-    # pylint: disable=no-member,no-self-use,locally-disabled
+    def _add_datapath(self, dp):
+        (host, port) = dp.address
+        if dp.id not in self.datapaths:
+            datapath.Datapath().add_datapath(dp.id, host, port)
+            self.datapaths.add(dp.id)
+
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, event):
         """Called when feature negotiation takes place. and adds necessary
@@ -41,6 +55,7 @@ class AppManager(app_manager.RyuApp):
         datapath = event.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        self._add_datapath(datapath)
         packet_util.send_to_controller(parser=parser,
                                        ofproto=ofproto,
                                        datapath=datapath,
@@ -51,8 +66,8 @@ class AppManager(app_manager.RyuApp):
                                   ofproto.OFPCML_NO_BUFFER)
 
         datapath.send_msg(req)
-        self.apps.append((dhcp.DHCPServer.matcher,
-                          dhcp.DHCPServer(datapath).process_packet))
+        self.apps.append((dhcp.DHCP.matcher,
+                          dhcp.DHCP(datapath).process_packet))
 
     def register(self, match, callback):
         """Registers an application to be managed by AppManager"""
@@ -66,9 +81,14 @@ class AppManager(app_manager.RyuApp):
 
             break
 
-    # pylint: disable=no-member
     @set_ev_cls(ofp_event.EventOFPPacketIn, handler.MAIN_DISPATCHER)
     def packet_in_handler(self, event):
         """Called on packet arrival and calls the correct apps."""
         pkt = packet.Packet(event.msg.data)
-        self.classifier(pkt, event.msg.datapath, event.msg.match['in_port'])
+        try:
+            self.classifier(pkt, event.msg.datapath,
+                            event.msg.match['in_port'])
+        except Exception:
+            # Keep working normally if a packet processing fails, to process
+            # next packets.
+            LOG.error("Failure in processing packet", exc_info=True)

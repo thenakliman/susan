@@ -12,29 +12,26 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc
-
-import netaddr
-
-
-def get_packed_address(address):
-    """Returns packet ip address."""
-
-    return netaddr.IPAddress(address).packed
+from abc import ABCMeta
+from abc import abstractmethod
 
 
-def make_type(name, base, **attributes):
-    return type(name, base, attributes)
+class Port(object):
+    def __init__(self, *args, **kwargs):
+        super(Port, self).__init__(*args, **kwargs)
 
+    @abstractmethod
+    def add_port(datapath_id, port, mac, subnet_id):
+        pass
 
-def make_enum(**attributes):
-    return make_type('Enum', (), **attributes)
+    @abstractmethod
+    def update_port(id, host=None, port=None):
+        pass
 
+    @abstractmethod
+    def delete_port(datapath_id, subnet_id):
+        pass
 
-# TODO(thenakliman) Make it working, and use at all the required places
-def abstractclass(cls):
-    for method in dir(cls):
-        if callable(getattr(cls, method)) and not method.startswith('__'):
-            setattr(cls, method, abc.abstractmethod(getattr(cls, method)))
-
-    return cls
+    @abstractmethod
+    def get_port(datapath_id, subnet_id):
+        pass

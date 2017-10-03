@@ -76,7 +76,12 @@ Possible Interactions
 4. Get the parameters for a Host
 5. Get all the parameters for a host
 6. Release IP address to the available Pool
-
+7. Get dhcp server information(MAC, IP)
+8. Delete or update dhcp server information
+9. Get range for a subnet to find IP for allocation
+10. Update or delete some parameter
+11. Add, update and delete datapath
+12. Add port to a datapath
 
 Possible Database Schema
 ========================
@@ -86,21 +91,20 @@ Subnet
 
   Columns: (
       ID PRIMARY KEY,
-      Name,
       Network,
       cidr,
       Gateway,
+      server,
+      next_server,
   )
 
   
   primary_key, ID
-  +------+------+---------+---------+
-  | ID   | name | network | cidr    |
-  +------+------+---------+---------+
-  |      |      |         |         |
-  +------+------+---------+---------+
-  |      |      |         |         |
-  +------+------+---------+---------+
+  +------+---------+---------+---------+--------+-------------+
+  | ID   | network | cidr    | gateway | server | next_server |
+  +------+---------+---------+---------+--------+-------------+
+  |      |         |         |         |        |             |
+  +------+---------+---------+---------+----------------------+
 
   NOTE: Multiple range within a subnet can be supported with non overlapping start
         and end IP address. How to choose primary key.
@@ -109,13 +113,12 @@ Range
 =====
 
   columns: (
-      ID PRIMARY KEY,
       subnet.ID FOREIGN KEY,
       StartIP,
       EndIP,
   )
 
-  Primary Key: ID
+  Primary Key: (subnet.id, startIP, endIP)
   Foreign Key: ID (Subnet.id)
 
   NOTE: This table has been introduced to make sure that multiple ranges can
@@ -159,11 +162,11 @@ Approach 1:
   in the database.
 
 
-Approach 2:
+Approach 2: Finally selected Approach
 
   Parameters: (
       subnet.ID FOREIGN KEY,
-      binded_ip.ID FOREIGN KEY,
+      MAC,
       data(type pickle) # use dict
   )
 
@@ -192,7 +195,7 @@ Reserved_ip
       expire_time
   )
 
-  primary_key: IP, MAc, subnet_id, Interface
+  primary_key: MAC, subnet_id
   Foreign Key: subnet_id
 
 
@@ -240,10 +243,23 @@ Reserved_ip
                           the "expiry" state. So deleted entry goes to
                           unallocated pool.
 
-             NOTE: To improve and make it better approach 2, let's use state as
+             NOTE(Finally selected One):
+                   To improve and make it better approach 2, let's use state as
                    well to cleanly find out and expiry state and commit IPs.
                    After offer this IP does not have to be given to a other
                    nodes.
+
+========
+Datapath
+========
+  datapath = (
+    id,
+    host_ip,
+    port,
+    subnet_id 
+  )
+
+
 
 ========
 Appendix
