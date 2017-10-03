@@ -12,10 +12,22 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from susan import CONF
+import logging
+import yaml
+
+from susan.common import exceptions
+
+LOG = logging.getLogger(__name__)
 
 
-def get_connection_string():
-    # TODO(thenakliman): Handle conditions like, if no such section is
-    # defined.
-    return CONF.get('sqlite', 'connection')
+def get_yaml(location):
+    try:
+        with open(location, 'r') as fid:
+            try:
+                content = yaml.load(fid)
+            except yaml.scanner.ScannerError:
+                raise exceptions.InvalidFormat(location=location)
+    except IOError:
+        raise exceptions.FileNotFound(location=location)
+
+    return content

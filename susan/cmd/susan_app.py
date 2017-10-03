@@ -30,6 +30,7 @@ LOG_FILE = '/var/log/susan'
 # TODO(thenakliman): Find some better way to set it.
 SERVICE_NAME = 'susan'
 
+
 def setup_config():
     # TODO(thenakliman): use argparse python module for better
     # parsing of command line arguments

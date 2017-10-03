@@ -121,3 +121,31 @@ class RangeNotFoundException(NotFoundException):
 class CommittedIPNotFoundException(NotFoundException):
     message = ("Committed ip for %(mac)s in %(subnet_id)s subnet, "
                "could not be found")
+
+
+class FileNotFound(NotFoundException):
+    message = ("%(location)s file could not be found")
+
+
+class InvalidFormat(SusanException):
+    message = ("Invalid format")
+
+
+class InvalidYamlFormat(InvalidFormat):
+    message = ("Yaml file %(location) has yaml formatting issue")
+
+
+class InvalidPipeline(SusanException):
+    message = ("Invalid pipeline")
+
+
+class AppNotFound(NotFoundException):
+    message = ("%(app)s app is not registered in the pipeline pipeline")
+
+
+class ClassNotFound(NotFoundException):
+    message = ("Class for %(app)s not found")
+
+
+class InvalidClassDefinition(SusanException):
+    message = ("Invalid class for %(app)s app")

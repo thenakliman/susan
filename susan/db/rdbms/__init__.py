@@ -33,7 +33,8 @@ def create_engine(connection=None):
 
     driver_name = susan.CONF.get('default', 'database')
     if connection is None:
-        driver = importlib.import_module(("%s.%s" % (DRIVER_BASE, driver_name)))
+        driver = importlib.import_module(("%s.%s" % (DRIVER_BASE,
+                                                     driver_name)))
         connection = driver.get_connection_string()
 
     # NOTE(thenakliman): echo can be set to true to disable emit of sql

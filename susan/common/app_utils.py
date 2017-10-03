@@ -12,10 +12,24 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from susan import CONF
+import importlib
+import logging
+
+from susan.common import constants
+from susan import pipeline
 
 
-def get_connection_string():
-    # TODO(thenakliman): Handle conditions like, if no such section is
-    # defined.
-    return CONF.get('sqlite', 'connection')
+LOG = logging.getLogger(__name__)
+
+
+def load_app(app_module, cls):
+    try:
+        path = "%s.%s" % (constants.APPS_BASE_LOCATION, app_module)
+        module = importlib.import_module(path)
+        return getattr(module, cls)
+    except ImportError:
+        LOG.exception("Unable log load %s module", path)
+        raise
+    except AttributeError:
+        LOG.exception("%s slass does not exist in %s module", cls, path)
+        raise

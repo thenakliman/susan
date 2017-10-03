@@ -25,8 +25,11 @@ from ryu.ofproto import ofproto_v1_3
 
 from susan.apps import dhcp
 from susan.apps import datapath
+from susan.common import app_utils
 from susan.common import constants
+from susan.common import graph_utils
 from susan.common import packet as packet_util
+from susan.pipeline import base as base_pipeline
 
 
 LOG = logging.getLogger(__name__)
@@ -39,6 +42,7 @@ class AppManager(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(AppManager, self).__init__(*args, **kwargs)
         self.datapaths = set()
+        self.pipeline = base_pipeline.get_pipeline()
         self.apps = []
 
     def _add_datapath(self, dp):
@@ -47,6 +51,10 @@ class AppManager(app_manager.RyuApp):
             datapath.Datapath().add_datapath(dp.id, host, port)
             self.datapaths.add(dp.id)
 
+    # TODO(thenakliman): Needs to consider multiple datapaths and multi
+    # tenancy. Multi tenancy seems to be big effort but exact method effort
+    # can be assed later on. Atleast, now multiple datpaths needs to be
+    # supported and thinked about.
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, handler.CONFIG_DISPATCHER)
     def switch_features_handler(self, event):
         """Called when feature negotiation takes place. and adds necessary
@@ -66,18 +74,53 @@ class AppManager(app_manager.RyuApp):
                                   ofproto.OFPCML_NO_BUFFER)
 
         datapath.send_msg(req)
-        self.apps.append((dhcp.DHCP.matcher,
-                          dhcp.DHCP(datapath).process_packet))
+        self.initialize_apps(datapath)
 
-    def register(self, match, callback):
+    def initialize_apps(self, datapath):
+        pipeline = self.pipeline.get_pipeline()
+        apps = graph_utils.get_apps(pipeline)
+        for app in apps:
+            if app == 'susan':
+                # NOTE(thenakliman): Not sure whether it is a good idea or not
+                # to consider susan as a special app. Other way to handle it
+                # can be introduced if need arises
+                continue
+            # NOTE(thenakliman): We can receive ClassNotFound and AppNotFound
+            # exceptions, they are not handled because we want to exit, if
+            # such exception occured. Handling can be added only after
+            # understanding real scenarios.
+            app_module = self.pipeline.get_app_module(app)
+            app_cls = self.pipeline.get_app_class(app)
+            try:
+                app = app_utils.load_app(app_module, app_cls)
+            except AttributeError, ImportError:
+                LOG.error("Unable to load %s app", exc_info=True)
+
+            app.initialize(datapath)
+            if app not in self.apps:
+                self.apps.append(app(datapath))
+
+    # TODO(thenakliman): This method is not being used, when we load the
+    # application then it is expected that it is having **matcher and
+    # **__call__** method defined. Other approach can be, to make applications
+    # to register method for the events or table or processing. This way, we
+    # avoid **matcher** and **__call__** protocol.
+    def register(self, app):
         """Registers an application to be managed by AppManager"""
-        self.apps.append((match, callback))
+        self.apps.append(app)
 
     def classifier(self, pkt, datapath, in_port):
         """Classify a packet and forward to corresponding application"""
-        for match, callback in self.apps:
-            if match(pkt):
-                callback(pkt, datapath, in_port)
+        for app in self.apps:
+            # TODO(thenakliman): Currently each application provides, its
+            # own matcher to match a packet therefore a packet has to
+            # go through all the matchers defined, which can delay other
+            # packet processing or reply to the received message. A better
+            # Approach is needed, something like, each table process
+            # a particular application therefore based on the table, packet
+            # is forwarded to the correct application.
+            if app.matcher(pkt):
+                app(pkt, datapath, in_port)
 
             break
 

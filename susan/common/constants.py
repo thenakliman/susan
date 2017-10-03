@@ -14,6 +14,8 @@
 
 from susan.common import utils
 
+
+APPS_BASE_LOCATION = 'susan.apps'
 # =============================================
 # Common Constants
 # =============================================
