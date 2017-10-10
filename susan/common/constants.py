@@ -25,7 +25,8 @@ BROADCAST_MAC = 'ff:ff:ff:ff:ff:ff'
 
 TABLE = utils.make_enum(
     DEFAULT=0,
-    DHCP=10
+    DHCP=10,
+    DNAT=0
 )
 
 
@@ -36,5 +37,6 @@ PROTOCOL = utils.make_enum(
 
 
 ETHERTYPE = utils.make_enum(
-    IPV4=0x0800
+    IPV4=0x0800,
+    ARP=0x0806
 )
