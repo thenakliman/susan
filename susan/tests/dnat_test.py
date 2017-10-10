@@ -1,5 +1,5 @@
-from susan.apps.arp import arp
-from susan.apps.dnat import dnat
+from susan.lib.arp import arp
+from susan.lib.dnat import dnat
 
 from ryu.lib import addrconv
 import struct

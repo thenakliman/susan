@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 
 from ryu.ofproto import ofproto_v1_3, nicira_ext
-from susan.apps.arp import arp
+from susan.lib.arp import arp
 from susan.common import constants
 from susan.common import packet as packet_util
 
