@@ -68,7 +68,7 @@ REQUEST = utils.make_enum(
     ACK=5,
     NACK=6,
     RELEASE=7,
-    INFORM=8
+    INFROM=8
 )
 
 DEFAULT_LEASE_TIME = 3600

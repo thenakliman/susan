@@ -13,14 +13,8 @@
 # under the License.
 
 import abc
-import struct
 
 import netaddr
-from ryu.lib import addrconv
-
-
-def ipv4_text_to_int(ip_text):
-    return struct.unpack('!I', addrconv.ipv4.text_to_bin(ip_text))[0]
 
 
 def get_packed_address(address):
