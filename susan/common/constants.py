@@ -37,4 +37,5 @@ PROTOCOL = utils.make_enum(
 
 ETHERTYPE = utils.make_enum(
     IPV4=0x0800
+    ARP=0x0806
 )
